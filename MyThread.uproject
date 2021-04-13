@@ -1,0 +1,13 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{D69CB29E-4686-7D0B-D23C-E1A5FD06A266}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "MyThread",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
