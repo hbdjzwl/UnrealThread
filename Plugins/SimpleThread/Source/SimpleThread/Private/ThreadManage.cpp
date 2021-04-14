@@ -19,6 +19,30 @@ void FThreadManagement::Destroy()
 
 }
 
+bool FThreadManagement::ProceduralProgress(FThreadHandle Handle)
+{
+	return false;
+}
+
+bool FThreadManagement::Do(FThreadHandle Handle)
+{
+
+	//ThreadProxy->CreateSafeThread();
+	return false;
+}
+
+void FThreadManagement::CleanAllThread()
+{
+
+}
+
+void FThreadManagement::CleanThread(FThreadHandle Handle)
+{
+
+}
+
+
+
 FThreadHandle FThreadManagement::CreateThread(const FThreadLambda& ThreadLambda)
 {
 	TSharedPtr<IThreadProxy> ThreadProxy = MakeShareable(new FThreadRunnable);
@@ -28,7 +52,7 @@ FThreadHandle FThreadManagement::CreateThread(const FThreadLambda& ThreadLambda)
 
 FThreadHandle FThreadManagement::UpdateThreadPool(TSharedPtr<IThreadProxy> ThreadProxy)
 {
-	ThreadProxy->CreateSafeThread();
+//	ThreadProxy->CreateSafeThread();取消自动执行 
 	Pool.Add(ThreadProxy); //添加到线程池里
 	
 	return ThreadProxy->GetThreadHandle();

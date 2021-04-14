@@ -1,10 +1,10 @@
 //创建一个线程，查看线程是不是在运行中，是不是在结束了。
-//
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Runnable/ThreadRunnableProxy.h"
-//单例
+//单例管理
+// 主线程和其它线程都可以调用，所用需要进行加锁。
 class SIMPLETHREAD_API FThreadManagement : public TSharedFromThis<FThreadManagement>
 {
 public:
@@ -13,6 +13,39 @@ public:
 
 
 public:
+	//判断当前线程是否闲置中
+	bool ProceduralProgress(FThreadHandle Handle);	
+	bool Do(FThreadHandle Handle); //执行已经绑定好的线程，如果线程没绑定好调用Do()返回fasle;
+private:
+	void CleanAllThread();	//清空删除所有线程
+	void CleanThread(FThreadHandle Handle);	//清除指定线程
+
+public:
+/*-------------------- 绑定方法 -------------------*/
+	/*------- BinRaw --------*/
+	template<class UserClass, typename... VarTypes>
+	FThreadHandle BindRaw(UserClass* TargetClass, typename TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type InMethod, VarTypes... Vars)
+	{
+		FThreadHandle Handle;
+		for (auto& ThreadProxy : Poll)
+		{
+			if (ProceduralProgress(ThreadProxy->GetThreadHandle())) //获取一个闲置线程
+			{
+				ThreadProxy->GetThreadDelegate().BindRaw(TargetClass, InMethod, Vars...); //绑定一个方法到闲置线程
+				Handle = ThreadProxy->GetThreadHandle();
+				break;
+			}
+		}
+		if (!Handle.IsValid())
+		{
+			CreateThreadRaw<UserClass,VarTypes...>(TargetClass, InMethod, Vars...);
+		}
+		return Handle;
+	}
+
+/*-------------------- 创建线程 + 绑定方法 -------------------*/
+#pragma region DelegateCreatedAndBind
+	/*------- BinRaw --------*/
 	template<class UserClass,typename... VarTypes>
 	FThreadHandle CreateThreadRaw(UserClass* TargetClass, typename TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type InMethod, VarTypes... Vars)
 	{
@@ -21,6 +54,42 @@ public:
 		return UpdateThreadPool(ThreadProxy);
 	}
 
+	/*------- BinUFunction --------*/
+	template<class UserClass,typename... VarTypes>
+	FThreadHandle CreateThreadFunction(UserClass* TargetClass, const FName& InMethodName, VarTypes... Vars)
+	{
+		TSharedPtr<IThreadProxy> ThreadProxy = MakeShareable(new FThreadRunnable);
+		ThreadProxy->GetThreadDelegate().BindUFunction(TargetClass,InMethodName,Vars...);
+		return UpdateThreadPool(ThreadProxy);
+	}
+
+	/*------- BinLambda --------*/
+	template<typename... VarTypes>
+	FThreadHandle CreateThreadLambda(TFunction<void(VarTypes...)> InMethod, VarTypes... Vars)
+	{
+		TSharedPtr<IThreadProxy> ThreadProxy = MakeShareable(new FThreadRunnable);
+		ThreadProxy->GetThreadDelegate().BindLambda(InMetod,Vars...);
+		return UpdateThreadPool(ThreadProxy);
+	}
+
+	/*------- BinSP --------*/
+	template<class UserClass, typename... VarTypes>
+	FThreadHandle CtreateThreadSP(UserClass* TargetClass, typename TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type InMethod, VarTypes... Vars)
+	{
+		TSharedPtr<IThreadProxy> ThreadProxy = MakeShareable(new FThreadRunnable);
+		ThreadProxy->GetThreadDelegate().BindSP(TargetClass, InMethod, Vars...);
+		return UpdateThreadPool(ThreadProxy);
+	}
+
+	/*------- BinObject --------*/
+	template<class UserClass, typename... VarTypes>
+	FThreadHandle CtreateThreadUObject(UserClass* TargetClass, typename TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type InMethod, VarTypes... Vars)
+	{
+		TSharedPtr<IThreadProxy> ThreadProxy = MakeShareable(new FThreadRunnable);
+		ThreadProxy->GetThreadDelegate().BindUObject(TargetClass, InMethod, Vars...);
+		return UpdateThreadPool(ThreadProxy);
+	}
+#pragma endregion
 	FThreadHandle CreateThread(const FThreadLambda& ThreadLambda);
 
 protected:

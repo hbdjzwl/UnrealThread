@@ -6,6 +6,8 @@ int32 FThreadRunnable::ThreadCount = 0;
 FThreadRunnable::FThreadRunnable()
 	:IThreadProxy()
 	,bRun(false)
+	,bSuspend(false)
+	,bImplement(false)
 	,Thread(nullptr)
 	,ThreadEvent(FPlatformProcess::GetSynchEventFromPool()) //拿到我们的Event
 {
@@ -23,8 +25,12 @@ FThreadRunnable::~FThreadRunnable()
 }
 void FThreadRunnable::CreateSafeThread()
 {
-	RunnableName = *(TEXT("SimpleThread-") + FString::Printf(TEXT("%i"), ThreadCount));
+	//准备执行逻辑
+	bSuspend = true;
+
+	RunnableName = *FString::Printf(TEXT("SimpleThread-%i"), ThreadCount);
 	Thread = FRunnableThread::Create(this, *RunnableName.ToString(), 0, TPri_BelowNormal);
+
 	ThreadCount++;
 }
 
@@ -36,7 +42,7 @@ void FThreadRunnable::SuspendThread()
 
 void FThreadRunnable::WakeupThread()
 {
-	bSuspend = false;
+	bImplement = true;
 	ThreadEvent->Trigger();//唤醒沉睡的线程
 }
 
@@ -49,18 +55,26 @@ uint32 FThreadRunnable::Run()
 			ThreadEvent->Wait(); //挂起线程
 		}
 
-		/* 业务逻辑 */
-		if (ThreadDelegate.IsBound()) //代理是否绑定
+		if (bImplement)
 		{
-			ThreadDelegate.Execute(); //ProxyInterface::ThreadDelegate
-		}
-		else
-		{
-			ThreadLambda(); //ProxyInterface::ThreadLambda
-		}
+			bImplement = false;
 
+			/* 业务逻辑 */
+			if (ThreadDelegate.IsBound()) //代理是否绑定
+			{
+				ThreadDelegate.Execute(); //ProxyInterface::ThreadDelegate
+				ThreadDelegate.Unbind(); //解除代理绑定
+			}
+			else
+			{
+				ThreadLambda(); //ProxyInterface::ThreadLambda
+				ThreadLambda = nullptr; //置空Lambda
+			}
+
+			//挂起这个线程
+			SuspendThread();
+		}
 	}
-
 	return 0;
 }
 

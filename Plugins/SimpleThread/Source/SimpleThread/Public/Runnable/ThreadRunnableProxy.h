@@ -28,6 +28,7 @@ private:
 private:
 	bool				bRun; //判断线程时候在使用
 	bool				bSuspend; //是否挂起线程
+	bool				bImplement; //是否执行
 	FRunnableThread*	Thread; //线程实例
 	FName				RunnableName; //线程名字
 	FEvent*				ThreadEvent; //线程事件，挂起当前线程。谁执行挂起谁。(其他线程唤醒当前线程)
