@@ -22,6 +22,7 @@ private:
 
 public:
 /*-------------------- 绑定方法 -------------------*/
+#pragma region DelegateBind
 	/*------- BinRaw --------*/
 	template<class UserClass, typename... VarTypes>
 	FThreadHandle BindRaw(UserClass* TargetClass, typename TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type InMethod, VarTypes... Vars)
@@ -29,7 +30,7 @@ public:
 		FThreadHandle Handle;
 		for (auto& ThreadProxy : Poll)
 		{
-			if (ProceduralProgress(ThreadProxy->GetThreadHandle())) //获取一个闲置线程
+			if (ThreadProxy->IsSuspend()) //获取一个被挂起的线程
 			{
 				ThreadProxy->GetThreadDelegate().BindRaw(TargetClass, InMethod, Vars...); //绑定一个方法到闲置线程
 				Handle = ThreadProxy->GetThreadHandle();
@@ -38,10 +39,94 @@ public:
 		}
 		if (!Handle.IsValid())
 		{
-			CreateThreadRaw<UserClass,VarTypes...>(TargetClass, InMethod, Vars...);
+			Handle = CreateThreadRaw<UserClass,VarTypes...>(TargetClass, InMethod, Vars...);
 		}
 		return Handle;
 	}
+	/*------- BinUObject --------*/
+	template<class UserClass, typename... VarTypes>
+	FThreadHandle BindUObject(UserClass* TargetClass, typename TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type InMethod, VarTypes... Vars)
+	{
+		FThreadHandle Handle;
+		for (auto& ThreadProxy : Poll)
+		{
+			if (ThreadProxy->IsSuspend()) //获取一个被挂起的线程
+			{
+				ThreadProxy->GetThreadDelegate().BindUObject(TargetClass, InMethod, Vars...); //绑定一个方法到闲置线程
+				Handle = ThreadProxy->GetThreadHandle();
+				break;
+			}
+		}
+		if (!Handle.IsValid())
+		{
+			Handle = CreateThreadUObject<UserClass, VarTypes...>(TargetClass, InMethod, Vars...);
+		}
+		return Handle;
+	}
+	/*------- BindSP --------*/
+	template<class UserClass, typename... VarTypes>
+	FThreadHandle BindSP(UserClass* TargetClass, typename TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type InMethod, VarTypes... Vars)
+	{
+		FThreadHandle Handle;
+		for (auto& ThreadProxy : Poll)
+		{
+			if (ThreadProxy->IsSuspend()) //获取一个被挂起的线程
+			{
+				ThreadProxy->GetThreadDelegate().BindSP(TargetClass, InMethod, Vars...); //绑定一个方法到闲置线程
+				Handle = ThreadProxy->GetThreadHandle();
+				break;
+			}
+		}
+		if (!Handle.IsValid())
+		{
+			Handle = CreateThreadSP<UserClass, VarTypes...>(TargetClass, InMethod, Vars...);
+		}
+		return Handle;
+	}
+	/*------- BindLambda --------*/
+	template<class UserClass, typename... VarTypes>
+	FThreadHandle BindLambda(TFunction<void(VarTypes...)> InMethod, VarTypes... Vars)
+	{
+		FThreadHandle Handle;
+		for (auto& ThreadProxy : Poll)
+		{
+			if (ThreadProxy->IsSuspend()) //获取一个被挂起的线程
+			{
+				ThreadProxy->GetThreadDelegate().BindLambda(InMethod, Vars...); //绑定一个方法到闲置线程
+				Handle = ThreadProxy->GetThreadHandle();
+				break;
+			}
+		}
+		if (!Handle.IsValid())
+		{
+			Handle = CreateThreadLambda <VarTypes...>( InMethod, Vars...);
+		}
+		return Handle;
+	}
+
+	/*------- BinUFunction --------*/
+	template<class UserClass, typename... VarTypes>
+	FThreadHandle BindUFunction(UserClass* TargetClass, const FName& InMethodName, VarTypes... Vars)
+	{
+		FThreadHandle Handle;
+		for (auto& ThreadProxy : Poll)
+		{
+			if (ThreadProxy->IsSuspend()) //获取一个被挂起的线程
+			{
+				ThreadProxy->GetThreadDelegate().BindUFunction(TargetClass,InMethodName, Vars...); //绑定一个方法到闲置线程
+				Handle = ThreadProxy->GetThreadHandle();
+				break;
+			}
+		}
+		if (!Handle.IsValid())
+		{
+			Handle = CreateThreadUFunction<UserClass,VarTypes...>(TargetClass,InMethod, Vars...);
+		}
+		return Handle;
+
+	}
+#pragma endregion
+
 
 /*-------------------- 创建线程 + 绑定方法 -------------------*/
 #pragma region DelegateCreatedAndBind
@@ -56,7 +141,7 @@ public:
 
 	/*------- BinUFunction --------*/
 	template<class UserClass,typename... VarTypes>
-	FThreadHandle CreateThreadFunction(UserClass* TargetClass, const FName& InMethodName, VarTypes... Vars)
+	FThreadHandle CreateThreadUFunction(UserClass* TargetClass, const FName& InMethodName, VarTypes... Vars)
 	{
 		TSharedPtr<IThreadProxy> ThreadProxy = MakeShareable(new FThreadRunnable);
 		ThreadProxy->GetThreadDelegate().BindUFunction(TargetClass,InMethodName,Vars...);

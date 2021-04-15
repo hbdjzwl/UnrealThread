@@ -6,10 +6,11 @@ int32 FThreadRunnable::ThreadCount = 0;
 FThreadRunnable::FThreadRunnable()
 	:IThreadProxy()
 	,bRun(false)
-	,bSuspend(false)
+	,bSuspend(true) //默认创建后是直接挂起线程的
 	,bImplement(false)
 	,Thread(nullptr)
 	,ThreadEvent(FPlatformProcess::GetSynchEventFromPool()) //拿到我们的Event
+	,StartUpEvent(FPlatformProcess::GetSynchEventFromPool())
 {
 
 }
@@ -18,15 +19,18 @@ FThreadRunnable::~FThreadRunnable()
 {
 	//释放事件对象
 	FPlatformProcess::ReturnSynchEventToPool(ThreadEvent);
+	FPlatformProcess::ReturnSynchEventToPool(StartUpEvent);
+
 	if (Thread != NULL)
 	{
-
+		delete Thread;
+		Thread = nullptr;//意义不大
 	}
 }
 void FThreadRunnable::CreateSafeThread()
 {
 	//准备执行逻辑
-	bSuspend = true;
+	bImplement = true;
 
 	RunnableName = *FString::Printf(TEXT("SimpleThread-%i"), ThreadCount);
 	Thread = FRunnableThread::Create(this, *RunnableName.ToString(), 0, TPri_BelowNormal);
@@ -34,16 +38,25 @@ void FThreadRunnable::CreateSafeThread()
 	ThreadCount++;
 }
 
-void FThreadRunnable::SuspendThread()
-{
-	bSuspend = true;
-
-}
-
-void FThreadRunnable::WakeupThread()
+void FThreadRunnable::WakeupThread() //主线程调用执行
 {
 	bImplement = true;
 	ThreadEvent->Trigger();//唤醒沉睡的线程
+}
+
+bool FThreadRunnable::IsSuspend()
+{
+	return bSuspend;
+}
+
+bool FThreadRunnable::WaitAndCompleted()
+{
+	bRun = false;
+	bImplement = false;
+	ThreadEvent->Trigger(); //激活原有线程？
+
+	StartUpEvent->Wait(); //阻塞我门的启动线程 (此行等待唤醒)
+	FPlatformProcess::Sleep(0.03f); //休眠0.03秒
 }
 
 uint32 FThreadRunnable::Run()
@@ -75,6 +88,9 @@ uint32 FThreadRunnable::Run()
 			SuspendThread();
 		}
 	}
+
+	StartUpEvent->Trigger(); //唤醒主线程
+
 	return 0;
 }
 
