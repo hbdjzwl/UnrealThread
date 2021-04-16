@@ -20,10 +20,26 @@ void FThreadManagement::Destroy()
 
 }
 
-bool FThreadManagement::ProceduralProgress(FThreadHandle Handle)
+EThreadState FThreadManagement::ProceduralProgress(FThreadHandle Handle)
 {
+	if (!Handle.IsValid())
+	{
+		return EThreadState::ERROR;
+	}
 
-	return false;
+	for (auto& ThreadProxy : Pool)
+	{
+		if (ThreadProxy->IsSuspend())
+		{
+			if (ThreadProxy->GetThreadHandle() == Handle)
+			{
+				return EThreadState::LEISURELY; //ÏÐÖÃ
+			}
+			
+		}
+	}
+
+	return EThreadState::WORKING; //¹¤×÷
 }
 
 bool FThreadManagement::Do(FThreadHandle Handle)

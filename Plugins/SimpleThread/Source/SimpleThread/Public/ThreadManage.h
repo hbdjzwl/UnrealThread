@@ -3,6 +3,16 @@
 
 #include "CoreMinimal.h"
 #include "Runnable/ThreadRunnableProxy.h"
+
+enum class EThreadState
+{
+	LEISURELY,
+	WORKING,
+	ERROR
+};
+
+
+
 //单例管理
 // 主线程和其它线程都可以调用，所用需要进行加锁。
 class SIMPLETHREAD_API FThreadManagement : public TSharedFromThis<FThreadManagement>
@@ -14,7 +24,7 @@ public:
 
 public:
 	//判断当前线程是否闲置中
-	bool ProceduralProgress(FThreadHandle Handle);	
+	EThreadState ProceduralProgress(FThreadHandle Handle);
 	bool Do(FThreadHandle Handle); //执行已经绑定好的线程，如果线程没绑定好调用Do()返回fasle;
 private:
 	void CleanAllThread();	//清空删除所有线程

@@ -49,14 +49,16 @@ bool FThreadRunnable::IsSuspend()
 	return bSuspend;
 }
 
-bool FThreadRunnable::WaitAndCompleted()
+void FThreadRunnable::WaitAndCompleted()
 {
 	bRun = false;
 	bImplement = false;
 	ThreadEvent->Trigger(); //激活原有线程？
 
 	StartUpEvent->Wait(); //阻塞我门的启动线程 (此行等待唤醒)
-	FPlatformProcess::Sleep(0.03f); //休眠0.03秒
+
+	//主线程休眠0.03秒。等待当前线程Run()成功返回后。在继续执行主线程后续的删除线程任务。
+	FPlatformProcess::Sleep(0.03f); 
 }
 
 uint32 FThreadRunnable::Run()
@@ -85,7 +87,7 @@ uint32 FThreadRunnable::Run()
 			}
 
 			//挂起这个线程
-			SuspendThread();
+			//SuspendThread();
 		}
 	}
 

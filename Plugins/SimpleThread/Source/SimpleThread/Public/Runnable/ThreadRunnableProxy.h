@@ -16,7 +16,7 @@ public:
 	virtual void CreateSafeThread()override; //创建线程
 	virtual void WakeupThread()override; //创建线程
 	virtual bool IsSuspend()override; //线程是否挂起
-	virtual bool WaitAndCompleted()override; //启动我门当前线程的线程(可能是主线程)
+	virtual void WaitAndCompleted()override; //启动我门当前线程的线程(可能是主线程)
 
 private:
 	/* Runnable的接口 */
