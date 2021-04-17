@@ -7,10 +7,22 @@ FThreadRunnable::FThreadRunnable()
 	:IThreadProxy()
 	,bRun(false)
 	,bSuspend(true) //默认创建后是直接挂起线程的
-	,bImplement(false)
 	,Thread(nullptr)
 	,ThreadEvent(FPlatformProcess::GetSynchEventFromPool()) //拿到我们的Event
 	,StartUpEvent(FPlatformProcess::GetSynchEventFromPool())
+	,WaitExecuteEvent(FPlatformProcess::GetSynchEventFromPool())
+{
+
+}
+
+FThreadRunnable::FThreadRunnable(bool InSuspend)
+	:IThreadProxy()
+	, bRun(false)
+	, bSuspend(InSuspend)
+	, Thread(nullptr)
+	, ThreadEvent(FPlatformProcess::GetSynchEventFromPool()) //拿到我们的Event
+	, StartUpEvent(FPlatformProcess::GetSynchEventFromPool())
+	, WaitExecuteEvent(FPlatformProcess::GetSynchEventFromPool())
 {
 
 }
@@ -20,6 +32,7 @@ FThreadRunnable::~FThreadRunnable()
 	//释放事件对象
 	FPlatformProcess::ReturnSynchEventToPool(ThreadEvent);
 	FPlatformProcess::ReturnSynchEventToPool(StartUpEvent);
+	FPlatformProcess::ReturnSynchEventToPool(WaitExecuteEvent);
 
 	if (Thread != NULL)
 	{
@@ -29,9 +42,6 @@ FThreadRunnable::~FThreadRunnable()
 }
 void FThreadRunnable::CreateSafeThread()
 {
-	//准备执行逻辑
-	bImplement = true;
-
 	RunnableName = *FString::Printf(TEXT("SimpleThread-%i"), ThreadCount);
 	Thread = FRunnableThread::Create(this, *RunnableName.ToString(), 0, TPri_BelowNormal);
 
@@ -40,7 +50,6 @@ void FThreadRunnable::CreateSafeThread()
 
 void FThreadRunnable::WakeupThread() //主线程调用执行
 {
-	bImplement = true;
 	ThreadEvent->Trigger();//唤醒沉睡的线程
 }
 
@@ -52,13 +61,17 @@ bool FThreadRunnable::IsSuspend()
 void FThreadRunnable::WaitAndCompleted()
 {
 	bRun = false;
-	bImplement = false;
 	ThreadEvent->Trigger(); //激活原有线程？
 
 	StartUpEvent->Wait(); //阻塞我门的启动线程 (此行等待唤醒)
 
 	//主线程休眠0.03秒。等待当前线程Run()成功返回后。在继续执行主线程后续的删除线程任务。
 	FPlatformProcess::Sleep(0.03f); 
+}
+
+void FThreadRunnable::BlockingAndCompletion()
+{
+	WaitExecuteEvent->Wait();
 }
 
 uint32 FThreadRunnable::Run()
@@ -70,28 +83,24 @@ uint32 FThreadRunnable::Run()
 			ThreadEvent->Wait(); //挂起线程
 		}
 
-		if (bImplement)
+		bSuspend = false;
+
+		/* 业务逻辑 */
+		if (ThreadDelegate.IsBound()) //代理是否绑定
 		{
-			bImplement = false;
-
-			/* 业务逻辑 */
-			if (ThreadDelegate.IsBound()) //代理是否绑定
-			{
-				ThreadDelegate.Execute(); //ProxyInterface::ThreadDelegate
-				ThreadDelegate.Unbind(); //解除代理绑定
-			}
-			else
-			{
-				ThreadLambda(); //ProxyInterface::ThreadLambda
-				ThreadLambda = nullptr; //置空Lambda
-			}
-
-			//挂起这个线程
-			//SuspendThread();
+			ThreadDelegate.Execute(); //ProxyInterface::ThreadDelegate
+			ThreadDelegate.Unbind(); //解除代理绑定
 		}
+
+		//执行完任务挂起这个线程
+		bSuspend = true;
+
+		//激活挂起的启动线程
+		WaitExecuteEvent->Trigger();
+
 	}
 
-	StartUpEvent->Trigger(); //唤醒主线程
+	
 
 	return 0;
 }
@@ -117,5 +126,6 @@ void FThreadRunnable::Stop()
 
 void FThreadRunnable::Exit()
 {
+	StartUpEvent->Trigger(); //唤醒主线程
 	bRun = false;
 }

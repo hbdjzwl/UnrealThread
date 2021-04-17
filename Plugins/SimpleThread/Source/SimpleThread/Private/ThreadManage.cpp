@@ -20,12 +20,54 @@ void FThreadManagement::Destroy()
 
 }
 
+void FThreadManagement::Tick(float DeltaTime)
+{
+	FScopeLock ScopeLock(&Mutex); //区域加锁{....}
+
+	TSharedPtr<IThreadProxy> ThreadProxy = nullptr;
+	for (auto& Temp : Pool)
+	{
+		if (Temp->IsSuspend())
+		{
+			ThreadProxy = Temp;
+			break;
+		}
+	}
+
+	if (ThreadProxy.IsValid())
+	{
+		if (!TaskQueue.IsEmpty())
+		{
+			FSimpleDelegate SimpleDelegate;
+			TaskQueue.Dequeue(SimpleDelegate);//尾部删除一个代理并取出
+			ThreadProxy->GetThreadDelegate() = SimpleDelegate;
+			ThreadProxy->WakeupThread(); //唤醒线程
+		}
+	}
+}
+
+TStatId FThreadManagement::GetStatId() const
+{
+	return TStatId();
+}
+
+void FThreadManagement::Init(int32 ThreadNum)
+{
+	for (int32 i = 0; i < ThreadNum; i++)
+	{
+		UpdateThreadPool(MakeShareable(new FThreadRunnable));
+	}
+
+}
+
 EThreadState FThreadManagement::ProceduralProgress(FThreadHandle Handle)
 {
 	if (!Handle.IsValid())
 	{
 		return EThreadState::ERROR;
 	}
+
+	FScopeLock ScopeLock(&Mutex); //区域加锁{....}
 
 	for (auto& ThreadProxy : Pool)
 	{
@@ -44,12 +86,30 @@ EThreadState FThreadManagement::ProceduralProgress(FThreadHandle Handle)
 
 bool FThreadManagement::Do(FThreadHandle Handle)
 {
+	FScopeLock ScopeLock(&Mutex); //区域加锁{....}
 	for (auto& ThreadProxy : Pool)
 	{
 		//判断1.是否被挂起。2.是否是当前要唤醒的线程。
 		if (ThreadProxy->IsSuspend()&& ThreadProxy->GetThreadHandle()==Handle)
 		{
-			ThreadProxy->WakeupThread(); 
+			ThreadProxy->WakeupThread();  //唤醒指定沉睡的线程
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool FThreadManagement::DoWait(FThreadHandle Handle)
+{
+	FScopeLock ScopeLock(&Mutex); //区域加锁{....}
+
+	for (auto& ThreadProxy : Pool)
+	{
+		//判断1.是否被挂起。2.是否是当前要唤醒的线程。
+		if (ThreadProxy->IsSuspend() && ThreadProxy->GetThreadHandle() == Handle)
+		{
+			ThreadProxy->BlockingAndCompletion();
 			return true;
 		}
 	}
@@ -59,6 +119,8 @@ bool FThreadManagement::Do(FThreadHandle Handle)
 
 void FThreadManagement::CleanAllThread()
 {
+	FScopeLock ScopeLock(&Mutex); //区域加锁{....}
+
 	for (auto& ThreadProxy : Pool)
 	{
 		ThreadProxy->WaitAndCompleted();
@@ -68,6 +130,8 @@ void FThreadManagement::CleanAllThread()
 
 void FThreadManagement::CleanThread(FThreadHandle Handle)
 {
+	FScopeLock ScopeLock(&Mutex); //区域加锁{....}
+
 	int32 RemoveIndex = INDEX_NONE;
 	for (int32 i = 0; i < Pool.Num(); i++)
 	{
@@ -85,19 +149,12 @@ void FThreadManagement::CleanThread(FThreadHandle Handle)
 }
 
 
-
-FThreadHandle FThreadManagement::CreateThread(const FThreadLambda& ThreadLambda)
-{
-	TSharedPtr<IThreadProxy> ThreadProxy = MakeShareable(new FThreadRunnable);
-	ThreadProxy->GetThreadLambda() = ThreadLambda; //谁调用绑定谁的方法。、
-	return UpdateThreadPool(ThreadProxy);
-}
-
 FThreadHandle FThreadManagement::UpdateThreadPool(TSharedPtr<IThreadProxy> ThreadProxy)
- {
+{
+	FScopeLock ScopeLock(&Mutex); //区域加锁{....}
+
 	ThreadProxy->CreateSafeThread(); //创建线程
 	Pool.Add(ThreadProxy); //添加到线程池里
-	
 	return ThreadProxy->GetThreadHandle();
 }
 
