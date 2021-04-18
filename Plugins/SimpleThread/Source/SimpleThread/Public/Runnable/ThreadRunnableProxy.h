@@ -4,12 +4,12 @@
 #include "CoreMinimal.h"
 #include "HAL/Runnable.h"
 #include "Interface/ProxyInterface.h"
+#include "Core/SimpleSemaphore.h"
 
 class FThreadRunnable : public FRunnable,public IThreadProxy
 {
 public:
-	FThreadRunnable();
-	FThreadRunnable(bool InSuspend);
+	FThreadRunnable(bool InSuspend = false);
 	virtual ~FThreadRunnable();
 
 	/* IThreadProxy的接口 */
@@ -28,13 +28,14 @@ private:
 
 private:
 	bool				bRun; //判断线程时候在使用
-	bool				bSuspend; //是否挂起线程
+	bool				bSuspendAtFirst; //是否挂起线程
 	FRunnableThread*	Thread; //线程实例
 	FName				RunnableName; //线程名字
-	FEvent*				ThreadEvent; //线程事件信号，挂起当前线程。谁执行挂起谁。(其他线程唤醒当前线程)
-	FEvent*				StartUpEvent; //挂起主线程的信号
-	
-	FEvent*				WaitExecuteEvent; //等待并执行信号
+
+	FSimpleSemaphore	ThreadEvent; //线程事件信号，挂起当前线程。谁执行挂起谁。(其他线程唤醒当前线程)
+	FSimpleSemaphore	StartUpEvent; //挂起主线程的信号
+	FSimpleSemaphore	WaitExecuteEvent; //等待并执行信号
+
 	FCriticalSection	Mutex;	//锁，保证同步
 
 

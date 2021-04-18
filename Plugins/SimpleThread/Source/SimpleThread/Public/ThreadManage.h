@@ -13,14 +13,6 @@
 #define CPUThreadNumber 12
 #endif
 
-enum class EThreadState
-{
-	LEISURELY,
-	WORKING,
-	ERROR
-};
-
-
 //FThreadManagement 是线程安全的，不容易出现死锁。
 //单例模式: 主线程和其它线程都可以调用，所用需要进行加锁。
 class SIMPLETHREAD_API FThreadManagement : public TSharedFromThis<FThreadManagement>, public FTickableGameObject
@@ -55,7 +47,6 @@ private:
 public:
 /*----------------------- 已有线程绑定方法 ----------------------*/
 #pragma region Bind
-
 	template<class UserClass, typename... VarTypes>
 	FThreadHandle BindRaw(UserClass* TargetClass, typename TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type InMethod, VarTypes... Vars)
 	{
@@ -157,8 +148,7 @@ public:
 
 	}
 #pragma endregion
-
-/*----------------------- 创建线程(绑定方法) ----------------------*/
+/*----------------------- 创建线程(绑定方法) --------------------*/
 #pragma region CreatedThread
 	template<class UserClass, typename... VarTypes>
 	FThreadHandle CreateRaw(UserClass* TargetClass, typename TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type InMethod, VarTypes... Vars)
@@ -208,7 +198,6 @@ public:
 		return UpdateThreadPool(ThreadProxy);
 	}
 #pragma endregion
-
 /*-------------------- 创建挂起线程(绑定方法) -------------------*/
 #pragma region CreatedSuspendThread
 
@@ -252,7 +241,8 @@ public:
 		return UpdateThreadPool(ThreadProxy);
 	}
 #pragma endregion
-
+/*------------------------- 添加任务队列 ------------------------*/
+#pragma region AddQueue
 private:
 	template<class UserClass,typename... VarTypes>
 	void AddRawToQueue(UserClass* TargetClass, typename TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type InMethod, VarTypes... Vars)
@@ -286,6 +276,8 @@ private:
 		FScopeLock ScopeLock(&Mutex); //加锁
 		TaskQueue.Enqueue(FSimpleDelegate::CreateUObject(TargetClass, InMethod, Var...));	//动态创建新代理
 	}
+#pragma endregion
+
 protected:
 	FThreadHandle UpdateThreadPool(TSharedPtr<IThreadProxy> ThreadProxy); //更新线程池
  

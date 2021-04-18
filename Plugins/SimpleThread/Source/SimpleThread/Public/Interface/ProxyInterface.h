@@ -1,7 +1,7 @@
 #pragma once
-
 #include "CoreMinimal.h"
 #include "Core/SimpleThreadType.h"
+
 class SIMPLETHREAD_API IThreadProxy : public TSharedFromThis<IThreadProxy>
 {
 public:

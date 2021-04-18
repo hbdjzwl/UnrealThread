@@ -22,5 +22,14 @@ protected:
 	uint64 GUIDTypeD;
 };
 
+enum class EThreadState //Ïß³Ì×´Ì¬
+{
+	LEISURELY,
+	WORKING,
+	ERROR
+};
+
+
 typedef TWeakPtr<FSimpleThreadHandle> FThreadHandle;
 typedef TFunction<void()> FThreadLambda;
+
