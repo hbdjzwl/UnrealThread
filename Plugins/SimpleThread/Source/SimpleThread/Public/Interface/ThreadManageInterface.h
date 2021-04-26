@@ -17,13 +17,16 @@ protected:
 //具有同步和异步的功能，一般运用在小场景。
 class IThreadProxyContainer : public TArray<TSharedPtr<IThreadProxy>>, public IThreadContainer
 {
+protected:
+	typedef TArray<TSharedPtr<IThreadProxy>> TProxyArray;
+
 public:
 	//创建线程并添加到线程池中
 	FThreadHandle operator<<(const TSharedPtr<IThreadProxy>& ThreadProxy)
 	{
 		MUTEX_LOCL; //锁
 		ThreadProxy->CreateSafeThread(); //创建线程
-		this.Add(ThreadProxy); //添加到线程池里
+		this->Add(ThreadProxy); //添加到线程池里
 		return ThreadProxy->GetThreadHandle();
 	}
 
@@ -93,6 +96,10 @@ public:
 //线程的任务管理，可以自动管理任务。自动配闲置的线程池，实现高效率的利用线程池特点。(既是线程池，也是任务队列)
 class IThreadTaskContainer : /*任务队列*/public TQueue<FSimpleDelegate>, /*线程池*/public TArray<TSharedPtr<IThreadProxy>>,/*公有接口*/public IThreadContainer
 {
+protected:
+	typedef TArray<TSharedPtr<IThreadProxy>>	TProxyArray;
+	typedef TQueue<FSimpleDelegate>				TEventQueue;
+
 public:
 	//任务队列添加一个任务
 	bool operator<<(const FSimpleDelegate& ThreadProxy)

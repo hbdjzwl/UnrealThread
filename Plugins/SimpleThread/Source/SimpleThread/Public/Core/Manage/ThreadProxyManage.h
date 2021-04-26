@@ -18,7 +18,7 @@ public:
 
 	
 public:
-	//绑定 但是 不执行 可以执行Join Detach 来执行线程
+	//绑定 但是 不执行 (可以执行Join Detach 来执行线程)
 	template<class UserClass, typename... VarTypes>
 	FThreadHandle BindRaw(UserClass* TargetClass, typename TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type InMethod, VarTypes... Vars)
 	{
