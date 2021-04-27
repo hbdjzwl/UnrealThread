@@ -1,5 +1,6 @@
 #include "Runnable/ThreadRunnableProxy.h"
 #include "HAL/RunnableThread.h"
+#include "SimpleThreadPlatform.h"  //自定义跨平台
 
 int32 FThreadRunnable::ThreadCount = 0;
 

@@ -55,26 +55,26 @@ void FThreadTaskManagement::Tick(float DeltaTime)
 		{
 			if (temp->IsSuspend())
 			{
-				ThreadProxy = temp;
+				ThreadProxy = temp; //获取闲置线程
 				break;
 			}
 		}
 	}
 
-	if (ThreadProxy.IsValid())
+	if (ThreadProxy.IsValid()) //获取到了限制线程
 	{
 
 		//if (!(static_cast<TQueue<FSimpleDelegate>*>(this)->IsEmpty())) //TQueus和TArray
 		//if (!((TEventQueue *)this)->IsEmpty())
 
-		if( !((TQueue<FSimpleDelegate> *)this)->IsEmpty() )
+		if( !((TQueue<FSimpleDelegate> *)this)->IsEmpty() ) //任务队列不等于空的
 		{
 			FSimpleDelegate SimpleDelegate;
-			if (*this >> SimpleDelegate)
+			if (*this >> SimpleDelegate) //取任务队列中的任务
 			{
 				MUTEX_LOCL;
-				ThreadProxy->GetThreadDelegate() = SimpleDelegate;
-				ThreadProxy->WakeupThread();
+				ThreadProxy->GetThreadDelegate() = SimpleDelegate; //设置任务代理
+				ThreadProxy->WakeupThread(); //唤醒闲置线程
 			}
 		}
 	}
@@ -120,7 +120,7 @@ bool FThreadProxyManage::Detach(FThreadHandle Handle) //异步
 
 	if (ThreadProxy.IsValid())
 	{
-		ThreadProxy->WakeupThread();
+		ThreadProxy->WakeupThread(); //唤醒沉睡线程
 		return true;
 	}
 
@@ -132,7 +132,7 @@ EThreadState FThreadProxyManage::Joinable(FThreadHandle Handle)
 	TSharedPtr<IThreadProxy> ThreadProxy = *this >> Handle;
 	if (ThreadProxy.IsValid())
 	{
-		if (ThreadProxy->IsSuspend())
+		if (ThreadProxy->IsSuspend()) //线程是否挂起
 		{
 			return EThreadState::LEISURELY;
 		}

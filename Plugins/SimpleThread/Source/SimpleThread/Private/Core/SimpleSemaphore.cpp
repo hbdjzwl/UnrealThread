@@ -1,4 +1,6 @@
 #include "Core/SimpleSemaphore.h"
+//#include "HAL/Event.h" //没有也不报错
+#include "SimpleThreadPlatform.h"  //自定义跨平台
 
 FSimpleSemaphore::FSimpleSemaphore()
 	:Event(FPlatformProcess::GetSynchEventFromPool())	//拿到我们的Event

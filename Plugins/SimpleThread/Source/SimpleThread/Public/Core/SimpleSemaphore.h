@@ -1,6 +1,8 @@
 #pragma once
 #include "CoreMinimal.h"
 
+class FEvent; 
+
 //ºÚµ•–≈∫≈¡ø
 struct FSimpleSemaphore
 {
