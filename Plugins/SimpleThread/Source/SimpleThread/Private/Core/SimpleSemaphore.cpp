@@ -1,9 +1,9 @@
 #include "Core/SimpleSemaphore.h"
-//#include "HAL/Event.h" //没有也不报错
-#include "SimpleThreadPlatform.h"  //自定义跨平台
+#include "HAL/Event.h" //娌℃湁涔熶笉鎶ラ敊
+#include "SimpleThreadPlatform.h"  //鑷畾涔夎法骞冲彴
 
 FSimpleSemaphore::FSimpleSemaphore()
-	:Event(FPlatformProcess::GetSynchEventFromPool())	//拿到我们的Event
+	:Event(FPlatformProcess::GetSynchEventFromPool())	//鎷垮埌鎴戜滑鐨凟vent
 	,bWait(false)
 {
 
@@ -11,7 +11,7 @@ FSimpleSemaphore::FSimpleSemaphore()
 
 FSimpleSemaphore::~FSimpleSemaphore()
 {
-	FPlatformProcess::ReturnSynchEventToPool(Event);	//释放事件对象
+	FPlatformProcess::ReturnSynchEventToPool(Event);	//閲婃斁浜嬩欢瀵硅薄
 }
 
 void FSimpleSemaphore::Wait()

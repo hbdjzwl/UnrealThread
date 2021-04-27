@@ -17,7 +17,8 @@
 	"Modules": [
 		{
 			"Name": "SimpleThread",
-			"Type": "Runtime",
+      "Type": "Runtime",
+      "WhitelistPlatforms": ["Win64"], 
 			"LoadingPhase": "Default"
 		}
 	]

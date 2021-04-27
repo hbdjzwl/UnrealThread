@@ -3,7 +3,7 @@
 
 class FEvent; 
 
-//¼òµ¥ĞÅºÅÁ¿
+//ç®€å•ä¿¡å·é‡
 struct FSimpleSemaphore
 {
 	FSimpleSemaphore();
@@ -13,6 +13,6 @@ struct FSimpleSemaphore
 	void Trigger();
 	FORCEINLINE bool IsWait() { return bWait; }
 private:
-	FEvent* Event; //ĞÅºÅÁ¿±¾Á¿
-	uint8 bWait : 1; //µ¥×Ö½ÚÎ»Óò£¬ÓÃÓÚ²¼¶û
+	FEvent* Event; //ä¿¡å·é‡æœ¬é‡
+	uint8 bWait : 1; //å•å­—èŠ‚ä½åŸŸï¼Œç”¨äºå¸ƒå°”
 };

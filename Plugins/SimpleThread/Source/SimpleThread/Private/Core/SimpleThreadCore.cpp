@@ -1,6 +1,6 @@
 #include "Core/SimpleThreadType.h"
 #include "Interface/ProxyInterface.h"
-/* Éú³ÉÎ¨Ò»ID*/
+/* ç”Ÿæˆå”¯ä¸€ID*/ 
 uint64 SpawnUniqueID() 
 {
 	return FMath::Abs(FMath::RandRange(100, 1245678) + FDateTime::Now().GetTicks());
