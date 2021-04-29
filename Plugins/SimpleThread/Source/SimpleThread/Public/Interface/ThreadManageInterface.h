@@ -3,6 +3,7 @@
 #include "Interface/ProxyInterface.h"
 #include "Containers/Queue.h"
 #include "Core/ThreadCoreMacro.h"
+#include "Abandonable/SimpleAbandonable.h"
 
 class IThreadContainer
 {
@@ -154,5 +155,25 @@ public:
 		}
 
 		return *this;
+	}
+};
+
+//同步异步线程接口
+class IAbandonableContatiner : public IThreadContainer
+{
+protected:
+	//同步绑定代理
+	void operator<<(const FSimpleDelegate& ThreadDelegate)
+	{
+		FAsyncTask<FSimpleAbandonable>* SimpleAbandonable = new FAsyncTask<FSimpleAbandonable>(ThreadDelegate);
+		SimpleAbandonable->StartBackgroundTask(); //执行后台程序(另外线程)
+		SimpleAbandonable->EnsureCompletion(); //阻塞启动线程，等待完成
+		delete SimpleAbandonable;
+	}
+
+	//异步绑定代理
+	void operator>>(const FSimpleDelegate& ThreadDelegate)
+	{
+		(new FAutoDeleteAsyncTask<FSimpleAbandonable>(ThreadDelegate))->StartBackgroundTask(); //任务完成后自动施放 
 	}
 };

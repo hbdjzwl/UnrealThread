@@ -16,31 +16,31 @@ public:
 	template<class UserClass, typename... VarTypes>
 	FThreadHandle CreateRaw(UserClass* TargetClass, typename TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type InMethod, VarTypes... Vars)
 	{
-		return *this^FSimpleDelegate::BindRaw(TargetClass, InMethod, Vars...);
+		return *this^FSimpleDelegate::CreateRaw(TargetClass, InMethod, Vars...);
 	}
 
 	template<class UserClass, typename... VarTypes>
 	FThreadHandle CreateUFunction(UserClass* TargetClass, const FName& InMethodName, VarTypes... Vars)
 	{
-		return *this ^ FSimpleDelegate::BindUFunction(TargetClass, InMethodName, Vars...);
+		return *this ^ FSimpleDelegate::CreateUFunction(TargetClass, InMethodName, Vars...);
 	}
 
 	template<typename FuncType, typename... VarTypes>
 	FThreadHandle CreateLambda(FuncType&& InMethod, VarTypes... Vars)
 	{
-		return *this ^ FSimpleDelegate::BindLambda(InMethod, Vars...);
+		return *this ^ FSimpleDelegate::CreateLambda(InMethod, Vars...);
 	}
 
 	template<class UserClass, typename... VarTypes>
 	FThreadHandle CtreateSP(const TSharedRef<UserClass>& TargetClass, typename TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type InMethod, VarTypes... Vars)
 	{
-		return *this ^ FSimpleDelegate::BindSP(TargetClass, InMethod, Vars...);
+		return *this ^ FSimpleDelegate::CreateSP(TargetClass, InMethod, Vars...);
 	}
 
 	template<class UserClass, typename... VarTypes>
 	FThreadHandle CtreateUObject(UserClass* TargetClass, typename TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type InMethod, VarTypes... Vars)
 	{
-		return *this ^ FSimpleDelegate::BindUObject(TargetClass, InMethod, Vars...);
+		return *this ^ FSimpleDelegate::CreateUObject(TargetClass, InMethod, Vars...);
 	}
 
 private:
