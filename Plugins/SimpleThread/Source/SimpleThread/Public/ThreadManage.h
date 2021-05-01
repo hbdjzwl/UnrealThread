@@ -5,6 +5,7 @@
 #include "Runnable/ThreadRunnableProxy.h"
 #include "Core/Manage/ThreadProxyManage.h"
 #include "Core/Manage/ThreadTaskManage.h"
+#include "Core/Manage/ThreadAbandonableManage.h"
 
 namespace TM
 {
@@ -18,12 +19,17 @@ namespace TM
 		static void Destroy();
 
 	public:
-		FORCEINLINE FThreadProxyManage& GetProxy() { return ThreadProxtManage; }
-		FORCEINLINE FThreadTaskManagement& GetTask() { return ThreadTaskManagement; }
+		static FThreadProxyManage& GetProxy() { return Get()->ThreadProxtManage; }
+		static FThreadTaskManagement& GetTask() { return Get()->ThreadTaskManagement; }
+		static FThreadAbandonableManage& GetAbandonable() { return Get()->ThreadAbandonableManage; }
+
 
 	protected:
-		FThreadProxyManage ThreadProxtManage;
-		FThreadTaskManagement ThreadTaskManagement;
+		FThreadProxyManage ThreadProxtManage; //自定义线程创建，可简单直接的创建线程
+
+		FThreadTaskManagement ThreadTaskManagement;	//自定义线程池，可以往线程池内丢任务，令其执行
+
+		FThreadAbandonableManage ThreadAbandonableManage; //ue4线程池内直接取线程
 
 	private:
 		static TSharedPtr<FThreadManagement> ThreadManagement;

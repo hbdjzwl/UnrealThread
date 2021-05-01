@@ -70,7 +70,7 @@ void FThreadTaskManagement::Tick(float DeltaTime)
 		if( !((TQueue<FSimpleDelegate> *)this)->IsEmpty() ) //任务队列不等于空的
 		{
 			FSimpleDelegate SimpleDelegate;
-			if (*this >> SimpleDelegate) //取任务队列中的任务
+			if (*this <<= SimpleDelegate) //取任务队列中的任务
 			{
 				MUTEX_LOCL;
 				ThreadProxy->GetThreadDelegate() = SimpleDelegate; //设置任务代理
