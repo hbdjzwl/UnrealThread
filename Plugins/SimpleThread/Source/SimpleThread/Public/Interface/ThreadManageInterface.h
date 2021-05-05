@@ -4,6 +4,7 @@
 #include "Containers/Queue.h"
 #include "Core/ThreadCoreMacro.h"
 #include "Abandonable/SimpleAbandonable.h"
+#include "Coroutines/SimpleCoroutines.h"
 
 class IThreadContainer
 {
@@ -173,4 +174,59 @@ protected:
 	{
 		(new FAutoDeleteAsyncTask<FSimpleAbandonable>(ThreadDelegate))->StartBackgroundTask(); //任务完成后自动施放 
 	}
+};
+
+//协程
+class ICoroutinesContainer
+{
+public:
+	ICoroutinesContainer():TmpTotalTime(0.f){}
+	virtual ~ICoroutinesContainer() { ICoroutinesObject::Array.Empty(); }
+
+	//初始化总时间
+	ICoroutinesContainer &operator<<(float TotalTime)
+	{
+		TmpTotalTime = TotalTime;
+
+		return *this;
+	}
+
+	//创建添加线程对象，返回*this
+	ICoroutinesContainer &operator<<(const FSimpleDelegate& ThreadDelegate)
+	{
+		ICoroutinesObject::Array.Add(MakeShareable(new FCoroutinesObject(TmpTotalTime, ThreadDelegate)));
+
+		return *this;
+	}
+
+	//移除完成的协程对象
+	void operator<<=(float Time)
+	{
+		TArray<TSharedPtr<ICoroutinesObject>> RemoveObject;
+		for (int32 i = 0; i < ICoroutinesObject::Array.Num(); i++)
+		{
+			FCoroutinesRequest Request(Time);
+
+			ICoroutinesObject::Array[i]->Update(Request);
+			if (Request.bCompleteRequest)
+			{
+				RemoveObject.Add(ICoroutinesObject::Array[i]);
+			}
+		}
+
+		for (auto &RemoveInstance : RemoveObject)
+		{
+			ICoroutinesObject::Array.Remove(RemoveInstance);
+		}
+	}
+
+	//添加创建协程对象，返回最新添加的协程对象
+	FCoroutinesHandle operator>>(const FSimpleDelegate& ThreadDelegate)
+	{
+		ICoroutinesObject::Array.Add(MakeShareable(new FCoroutinesObject(ThreadDelegate)));
+
+		return ICoroutinesObject::Array[ICoroutinesObject::Array.Num() - 1];
+	}
+private:
+	float TmpTotalTime; 
 };

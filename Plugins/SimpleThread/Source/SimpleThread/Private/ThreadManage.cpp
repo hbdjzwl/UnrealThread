@@ -19,6 +19,18 @@ void FThreadManagement::Destroy()
 
 }
 
+void FThreadManagement::Tick(float DeltaTime)
+{
+	ThreadTaskManagement.Tick(DeltaTime); //线程任务队列
+
+	CoroutinesManage.Tick(DeltaTime); //协程管理
+}
+
+TStatId FThreadManagement::GetStatId() const
+{
+	return TStatId();
+}
+
 /*--------------------------- FThreadTaskManagement.cpp ---------------------------*/
 /*--------------------------- FThreadTaskManagement.cpp ---------------------------*/
 FThreadTaskManagement::~FThreadTaskManagement()
@@ -81,11 +93,6 @@ void FThreadTaskManagement::Tick(float DeltaTime)
 
 }
 
-TStatId FThreadTaskManagement::GetStatId() const
-{
-	return TStatId();
-}
-
 
 /*--------------------------- ThreadProxyManage.cpp ---------------------------*/
 /*--------------------------- ThreadProxyManage.cpp ---------------------------*/
@@ -143,4 +150,19 @@ EThreadState FThreadProxyManage::Joinable(FThreadHandle Handle)
 	}
 
 	return EThreadState::ERROR;
+}
+
+
+/*--------------------------- FCoroutinesManage.cpp ---------------------------*/
+/*--------------------------- FCoroutinesManage.cpp ---------------------------*/
+
+FCoroutinesManage::FCoroutinesManage()
+	:FThreadTemplateBase<ICoroutinesContainer, FCoroutinesHandle>()
+{
+
+}
+
+void FCoroutinesManage::Tick(float DeltaTime)
+{
+	*this <<= DeltaTime;
 }
