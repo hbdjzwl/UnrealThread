@@ -7,7 +7,9 @@
 #include "Core/Manage/ThreadTaskManage.h"
 #include "Core/Manage/ThreadAbandonableManage.h"
 #include "Core/Manage/CoroutinesManage.h"
+#include "Core/Manage/ThreadGraphManage.h"
 #include "Tickable.h"
+
 
 namespace TM
 {
@@ -35,7 +37,7 @@ namespace TM
 		FThreadTaskManagement ThreadTaskManagement;			//自定义线程池，可以往线程池内丢任务，令其执行
 		FThreadAbandonableManage ThreadAbandonableManage;	//ue4线程池内直接取线程
 		FCoroutinesManage CoroutinesManage;					//协程
-
+		FThreadGraphManage ThreadGrapManage;				//可以设置前置任务的UE4线程池
 	private:
 		static TSharedPtr<FThreadManagement> ThreadManagement; //单例对象
 	};

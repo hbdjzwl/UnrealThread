@@ -166,3 +166,15 @@ void FCoroutinesManage::Tick(float DeltaTime)
 {
 	*this <<= DeltaTime;
 }
+
+/*--------------------------- FThreadGraphManage.cpp ---------------------------*/
+/*--------------------------- FThreadGraphManage.cpp ---------------------------*/
+void FThreadGraphManage::Wait(const FGraphEventRef &EventRef)
+{
+	FTaskGraphInterface::Get().WaitUntilTaskCompletes(EventRef);
+}
+
+void FThreadGraphManage::Wait(const FGraphEventArray &EventRef)
+{
+	FTaskGraphInterface::Get().WaitUntilTasksComplete(EventRef);
+}

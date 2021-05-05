@@ -230,3 +230,32 @@ public:
 private:
 	float TmpTotalTime; 
 };
+
+
+//图表线程接口
+class IGraphContainer :public IThreadContainer
+{
+protected:
+
+	//呼叫主线程
+	FGraphEventRef operator<<(const FSimpleDelegate& ThreadDelegate)
+	{
+		MUTEX_LOCL;
+		return FSimpleDelegateGraphTask::CreateAndDispatchWhenReady(
+			ThreadDelegate,
+			TStatId(),
+			nullptr,
+			ENamedThreads::GameThread);
+	}
+
+	//绑定任意线程
+	FGraphEventRef operator>>(const FSimpleDelegate& ThreadDelegate)
+	{
+		MUTEX_LOCL;
+		return FSimpleDelegateGraphTask::CreateAndDispatchWhenReady(
+			ThreadDelegate,
+			TStatId(),
+			nullptr,
+			ENamedThreads::AnyThread); 
+	}
+};
