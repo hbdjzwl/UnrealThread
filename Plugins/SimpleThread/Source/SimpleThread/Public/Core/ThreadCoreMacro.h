@@ -86,3 +86,46 @@ USE_UE_THREAD_POOL_SYNCTASK(FSimpleDelegate::CreateLambda(Method,__VA_ARGS__))
 
 #define SYNCTASK_UFunction(Object,Method,...) \
 USE_UE_THREAD_POOL_SYNCTASK(FSimpleDelegate::CreateUFunction(Object,Method,__VA_ARGS__))
+
+
+
+
+
+
+//同步
+#define CALL_THREAD_SYNCH(CallThread,OtherTask,Code) \
+{FGraphEventRef NewTask = FSimpleDelegateGraphTask::CreateAndDispatchWhenReady([&]() {Code}, TStatId(), OtherTask, CallThread);	\
+FTaskGraphInterface::Get().WaitUntilTaskCompletes(NewTask);}
+
+//异步
+#define CALL_THREAD_ASYNCH(CallThread,OtherTask,Code) \
+FSimpleDelegateGraphTask::CreateAndDispatchWhenReady([&]() {Code}, TStatId(), OtherTask, CallThread);
+
+//呼叫线程 可以设置前置任务
+#define CALL_THREAD(EventRef,InTaskDeletegate,OtherTask) \
+EventRef = FSimpleDelegateGraphTask::CreateAndDispatchWhenReady(InTaskDeletegate,TStatId(),OtherTask);
+
+//
+#define CALL_THREAD_UOBJECT(EventRef,OtherTask,Object,Method,...) \
+CALL_THREAD(EventRef,OtherTask,FSimpleDelegate::CreateUObject(Object,Method,__VA_ARGS__))
+
+#define CALL_THREAD_Raw(EventRef,OtherTask,Object,Method,...) \
+CALL_THREAD(EventRef,OtherTask,FSimpleDelegate::CreateRaw(Object,Method,__VA_ARGS__))
+
+#define CALL_THREAD_SP(EventRef,OtherTask,Object,Method,...) \
+CALL_THREAD(EventRef,OtherTask,FSimpleDelegate::CreateSP(Object,Method,__VA_ARGS__))
+
+#define CALL_THREAD_Lambda(EventRef,OtherTask,Method,...) \
+CALL_THREAD(EventRef,OtherTask,FSimpleDelegate::CreateLambda(Method,__VA_ARGS__))
+
+#define CALL_THREAD_UFunction(EventRef,OtherTask,Object,Method,...) \
+CALL_THREAD(EventRef,OtherTask,FSimpleDelegate::CreateUFunction(Object,Method,__VA_ARGS__))
+
+
+//等待1个事件
+#define WAITING_OTHER_THREADS_COMPLETED(EventRef) \
+FTaskGraphInterface::Get().WaitUntilTaskCompletes(EventRef);
+
+//等待多个事件
+#define WAITING_OTHER_THREADS_COMPLETED_MULTI(EventRef) \
+FTaskGraphInterface::Get().WaitUntilTasksComplete(EventRef);
