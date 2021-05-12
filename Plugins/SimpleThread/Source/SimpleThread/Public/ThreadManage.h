@@ -1,4 +1,4 @@
-//´´½¨Ò»¸öÏß³Ì£¬²é¿´Ïß³ÌÊÇ²»ÊÇÔÚÔËĞĞÖĞ£¬ÊÇ²»ÊÇÔÚ½áÊøÁË¡£
+//åˆ›å»ºä¸€ä¸ªçº¿ç¨‹ï¼ŒæŸ¥çœ‹çº¿ç¨‹æ˜¯ä¸æ˜¯åœ¨è¿è¡Œä¸­ï¼Œæ˜¯ä¸æ˜¯åœ¨ç»“æŸäº†ã€‚
 #pragma once
 
 #include "CoreMinimal.h"
@@ -8,14 +8,16 @@
 #include "Core/Manage/ThreadAbandonableManage.h"
 #include "Core/Manage/CoroutinesManage.h"
 #include "Core/Manage/ThreadGraphManage.h"
+#include "Core/Manage/ResourceLoadingManage.h"
 #include "Tickable.h"
+
 
 
 namespace TM
 {
 
-	//FThreadManagement ÊÇÏß³Ì°²È«µÄ£¬²»ÈİÒ×³öÏÖËÀËø¡£
-	//µ¥ÀıÄ£Ê½: Ö÷Ïß³ÌºÍÆäËüÏß³Ì¶¼¿ÉÒÔµ÷ÓÃ£¬ËùÓÃĞèÒª½øĞĞ¼ÓËø¡£
+	//FThreadManagement æ˜¯çº¿ç¨‹å®‰å…¨çš„ï¼Œä¸å®¹æ˜“å‡ºç°æ­»é”ã€‚
+	//å•ä¾‹æ¨¡å¼: ä¸»çº¿ç¨‹å’Œå…¶å®ƒçº¿ç¨‹éƒ½å¯ä»¥è°ƒç”¨ï¼Œæ‰€ç”¨éœ€è¦è¿›è¡ŒåŠ é”ã€‚
 	class SIMPLETHREAD_API FThreadManagement : public TSharedFromThis<FThreadManagement>,public FTickableGameObject
 	{
 	public:
@@ -31,17 +33,36 @@ namespace TM
 		static FThreadTaskManagement& GetTask() { return Get()->ThreadTaskManagement; }
 		static FThreadAbandonableManage& GetAbandonable() { return Get()->ThreadAbandonableManage; }
 		static FCoroutinesManage& GetCoroutines() { return Get()->CoroutinesManage; }
-
+		static FResourceLoadingManage& GetResourceLoading() { return Get()->ResourceLoadingManage; }
 	protected:
-		FThreadProxyManage ThreadProxtManage;				//×Ô¶¨ÒåÏß³Ì´´½¨£¬¿É¼òµ¥Ö±½ÓµÄ´´½¨Ïß³Ì
-		FThreadTaskManagement ThreadTaskManagement;			//×Ô¶¨ÒåÏß³Ì³Ø£¬¿ÉÒÔÍùÏß³Ì³ØÄÚ¶ªÈÎÎñ£¬ÁîÆäÖ´ĞĞ
-		FThreadAbandonableManage ThreadAbandonableManage;	//ue4Ïß³Ì³ØÄÚÖ±½ÓÈ¡Ïß³Ì
-		FCoroutinesManage CoroutinesManage;					//Ğ­³Ì
-		FThreadGraphManage ThreadGrapManage;				//¿ÉÒÔÉèÖÃÇ°ÖÃÈÎÎñµÄUE4Ïß³Ì³Ø
+		FThreadProxyManage ThreadProxtManage;				//è‡ªå®šä¹‰çº¿ç¨‹åˆ›å»ºï¼Œå¯ç®€å•ç›´æ¥çš„åˆ›å»ºçº¿ç¨‹
+		FThreadTaskManagement ThreadTaskManagement;			//è‡ªå®šä¹‰çº¿ç¨‹æ± ï¼Œå¯ä»¥å¾€çº¿ç¨‹æ± å†…ä¸¢ä»»åŠ¡ï¼Œä»¤å…¶æ‰§è¡Œ
+		FThreadAbandonableManage ThreadAbandonableManage;	//ue4çº¿ç¨‹æ± å†…ç›´æ¥å–çº¿ç¨‹
+		FCoroutinesManage CoroutinesManage;					//åç¨‹
+		FThreadGraphManage ThreadGrapManage;				//å¯ä»¥è®¾ç½®å‰ç½®ä»»åŠ¡çš„UE4çº¿ç¨‹æ± 
+		FResourceLoadingManage ResourceLoadingManage;		//èµ„æºè¯»å–
 	private:
-		static TSharedPtr<FThreadManagement> ThreadManagement; //µ¥Àı¶ÔÏó
+		static TSharedPtr<FThreadManagement> ThreadManagement; //å•ä¾‹å¯¹è±¡
 	};
 }
 
 using namespace TM;
 typedef TM::FThreadManagement GThread;
+
+void Examle()
+{
+	TArray<FSoftObjectPath> ObjectPath;
+	TSharedPtr<FStreamableHandle> Handle;
+
+	auto La = [&Handle]()
+	{
+		TArray<UObject*> ExampleObject;
+		Handle->GetLoadedAssets(ExampleObject);
+	};
+
+	//å¼‚æ­¥ä½¿ç”¨æ–¹æ³•
+	Handle = GThread::GetResourceLoading() >> ObjectPath >> FSimpleDelegate::CreateLambda(La);
+
+	//åŒæ­¥
+	Handle = GThread::GetResourceLoading() << ObjectPath;
+}

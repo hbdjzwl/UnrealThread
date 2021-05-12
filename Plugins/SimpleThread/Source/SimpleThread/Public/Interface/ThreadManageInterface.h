@@ -5,6 +5,8 @@
 #include "Core/ThreadCoreMacro.h"
 #include "Abandonable/SimpleAbandonable.h"
 #include "Coroutines/SimpleCoroutines.h"
+#include "Engine/StreamableManager.h"
+//#include "Runnable/ThreadRunnableProxy.h"
 
 class IThreadContainer
 {
@@ -15,33 +17,33 @@ protected:
 	FCriticalSection Mutex;
 };
 
-//¿ÉÒÔ×ÔÓÉ´´½¨Ïß³Ì£¬²»ÊÜÏŞÖÆ£¬´´½¨Íê±ÏµÄÏß³Ì²»»áÂíÉÏÏú»Ù£¬Èç¹ûÓĞĞèÒª¿ÉÒÔÔÙ´ÎÊ¹ÓÃ
-//¾ßÓĞÍ¬²½ºÍÒì²½µÄ¹¦ÄÜ£¬Ò»°ãÔËÓÃÔÚĞ¡³¡¾°¡£
+//å¯ä»¥è‡ªç”±åˆ›å»ºçº¿ç¨‹ï¼Œä¸å—é™åˆ¶ï¼Œåˆ›å»ºå®Œæ¯•çš„çº¿ç¨‹ä¸ä¼šé©¬ä¸Šé”€æ¯ï¼Œå¦‚æœæœ‰éœ€è¦å¯ä»¥å†æ¬¡ä½¿ç”¨
+//å…·æœ‰åŒæ­¥å’Œå¼‚æ­¥çš„åŠŸèƒ½ï¼Œä¸€èˆ¬è¿ç”¨åœ¨å°åœºæ™¯ã€‚
 class IThreadProxyContainer : public TArray<TSharedPtr<IThreadProxy>>, public IThreadContainer
 {
 protected:
 	typedef TArray<TSharedPtr<IThreadProxy>> TProxyArray;
 
 public:
-	//1.´«ÈëÒ»¸ö·â×°Ïß³Ì£¬²¢´´½¨·â×°Ïß³ÌÀïÄÚ²¿ÕæÕıµÄÏß³ÌÌí¼Óµ½Ïß³Ì³ØÖĞ
-	//2.½«·â×°Ïß³ÌÌí¼Óµ½×ÔÉíÊı×éÀï¡£
+	//1.ä¼ å…¥ä¸€ä¸ªå°è£…çº¿ç¨‹ï¼Œå¹¶åˆ›å»ºå°è£…çº¿ç¨‹é‡Œå†…éƒ¨çœŸæ­£çš„çº¿ç¨‹æ·»åŠ åˆ°çº¿ç¨‹æ± ä¸­
+	//2.å°†å°è£…çº¿ç¨‹æ·»åŠ åˆ°è‡ªèº«æ•°ç»„é‡Œã€‚
 	IThreadProxyContainer& operator<<(const TSharedPtr<IThreadProxy>& ThreadProxy)
 	{
-		MUTEX_LOCL; //Ëø
-		ThreadProxy->CreateSafeThread(); //´´½¨Ïß³Ì
-		this->Add(ThreadProxy); //Ìí¼Óµ½Ïß³Ì³ØÀï
+		MUTEX_LOCL; //é”
+		ThreadProxy->CreateSafeThread(); //åˆ›å»ºçº¿ç¨‹
+		this->Add(ThreadProxy); //æ·»åŠ åˆ°çº¿ç¨‹æ± é‡Œ
 		return *this;
 	}
 
-	//Ñ°ÕÒÒ»¸öÏĞÖÃ¿Õ´úÀíÏß³Ì£¬½«Ò»¸ö°ó¶¨ÈÎÎñµÄ´úÀíÉèÖÃ¸øÏß³Ì£¬ÈôÏß³Ì²»¹»£¬²Å¿ª±ÙĞÂÏß³Ì£¬²¢·µ»ØÏß³ÌHandle
+	//å¯»æ‰¾ä¸€ä¸ªé—²ç½®ç©ºä»£ç†çº¿ç¨‹ï¼Œå°†ä¸€ä¸ªç»‘å®šä»»åŠ¡çš„ä»£ç†è®¾ç½®ç»™çº¿ç¨‹ï¼Œè‹¥çº¿ç¨‹ä¸å¤Ÿï¼Œæ‰å¼€è¾Ÿæ–°çº¿ç¨‹ï¼Œå¹¶è¿”å›çº¿ç¨‹Handle
 	FThreadHandle operator>>(const FSimpleDelegate& ThreadProxy)
 	{
-		FThreadHandle ThreadHandle = nullptr;	//MUTEX_LOCL; Ëµ»áËÀËø¡£
+		FThreadHandle ThreadHandle = nullptr;	//MUTEX_LOCL; è¯´ä¼šæ­»é”ã€‚
 		{
 			MUTEX_LOCL;
 			for (auto& temp : *this)
 			{
-				if (temp->IsSuspend() && !temp->GetThreadDelegate().IsBound()) //ÏĞÖÃÏß³Ì&&¿Õ´úÀí
+				if (temp->IsSuspend() && !temp->GetThreadDelegate().IsBound()) //é—²ç½®çº¿ç¨‹&&ç©ºä»£ç†
 				{
 					temp->GetThreadDelegate() = ThreadProxy;
 					ThreadHandle = temp->GetThreadHandle();
@@ -50,18 +52,18 @@ public:
 			}
 		}
 
-		//1.Ïß³ÌÊıÁ¿²»¹»£¬Ôò´´½¨ĞÂµÄÏß³ÌÌí¼ÓÏß³Ì³ØÖĞ¡£2.Ìí¼ÓÈÎÎñ´úÀí
+		//1.çº¿ç¨‹æ•°é‡ä¸å¤Ÿï¼Œåˆ™åˆ›å»ºæ–°çš„çº¿ç¨‹æ·»åŠ çº¿ç¨‹æ± ä¸­ã€‚2.æ·»åŠ ä»»åŠ¡ä»£ç†
 		if (!ThreadHandle.IsValid())
 		{
-			ThreadHandle = *this << MakeShareable(new FThreadRunnable(true)) >> ThreadProxy; //´´½¨¼ÈÖ´ĞĞ
+			ThreadHandle = *this << MakeShareable(new FThreadRunnable(true)) >> ThreadProxy; //åˆ›å»ºæ—¢æ‰§è¡Œ
 		}
 		return ThreadHandle;
 	}
 
-	//ÓëFThreadHandle operator>>ÏàÍ¬¡£Î¨¶À¾ÍÊÇnew FThreadRunnable()²ÎÊı²»Í¬
+	//ä¸FThreadHandle operator>>ç›¸åŒã€‚å”¯ç‹¬å°±æ˜¯new FThreadRunnable()å‚æ•°ä¸åŒ
 	FThreadHandle operator << (const FSimpleDelegate& ThreadProxy)
 	{
-		FThreadHandle ThreadHandle = nullptr;	//MUTEX_LOCL; Ëµ»áËÀËø¡£
+		FThreadHandle ThreadHandle = nullptr;	//MUTEX_LOCL; è¯´ä¼šæ­»é”ã€‚
 		{
 			MUTEX_LOCL;
 			for (auto& temp : *this)
@@ -77,13 +79,13 @@ public:
 
 		if (!ThreadHandle.IsValid())
 		{
-			//´´½¨
-			ThreadHandle = *this << MakeShareable(new FThreadRunnable) << ThreadProxy;	//ÓëFThreadHandle operator^ÏàÍ¬¡£Î¨¶À¾ÍÊÇnew FThreadRunnable()²ÎÊı²»Í¬
+			//åˆ›å»º
+			ThreadHandle = *this << MakeShareable(new FThreadRunnable) << ThreadProxy;	//ä¸FThreadHandle operator^ç›¸åŒã€‚å”¯ç‹¬å°±æ˜¯new FThreadRunnable()å‚æ•°ä¸åŒ
 		}
 		return ThreadHandle;
 	}
 
-	//¸ù¾İHandle·µ»Ø¾ßÌåÏß³Ì½Ó¿ÚÀà
+	//æ ¹æ®Handleè¿”å›å…·ä½“çº¿ç¨‹æ¥å£ç±»
 	TSharedPtr<IThreadProxy> operator>>(const FThreadHandle& Handle)
 	{
 		MUTEX_LOCL;
@@ -98,9 +100,9 @@ public:
 	}
 };
 							 						
-//Ïß³ÌµÄÈÎÎñ¹ÜÀí£¬¿ÉÒÔ×Ô¶¯¹ÜÀíÈÎÎñ¡£×Ô¶¯ÅäÏĞÖÃµÄÏß³Ì³Ø£¬ÊµÏÖ¸ßĞ§ÂÊµÄÀûÓÃÏß³Ì³ØÌØµã¡£(¼ÈÊÇÏß³Ì³Ø£¬Ò²ÊÇÈÎÎñ¶ÓÁĞ)
-//¸öÈË: ¹Ì¶¨ÊıÁ¿µÄÏß³ÌÔËĞĞ´úÀíÈÎÎñ£¬ÈôÏß³Ì³ØÖĞµÄÏß³Ìµ±Ç°ÎŞÏĞÖÃÏß³Ì£¬Ôò»á½«ÈÎÎñ´úÀí¼ÓÈëÈÎÎñ¶ÓÁĞÖĞ¡£
-class IThreadTaskContainer : /*ÈÎÎñ¶ÓÁĞ*/public TQueue<FSimpleDelegate>, /*Ïß³Ì³Ø*/public TArray<TSharedPtr<IThreadProxy>>,/*¹«ÓĞ½Ó¿Ú*/public IThreadContainer
+//çº¿ç¨‹çš„ä»»åŠ¡ç®¡ç†ï¼Œå¯ä»¥è‡ªåŠ¨ç®¡ç†ä»»åŠ¡ã€‚è‡ªåŠ¨é…é—²ç½®çš„çº¿ç¨‹æ± ï¼Œå®ç°é«˜æ•ˆç‡çš„åˆ©ç”¨çº¿ç¨‹æ± ç‰¹ç‚¹ã€‚(æ—¢æ˜¯çº¿ç¨‹æ± ï¼Œä¹Ÿæ˜¯ä»»åŠ¡é˜Ÿåˆ—)
+//ä¸ªäºº: å›ºå®šæ•°é‡çš„çº¿ç¨‹è¿è¡Œä»£ç†ä»»åŠ¡ï¼Œè‹¥çº¿ç¨‹æ± ä¸­çš„çº¿ç¨‹å½“å‰æ— é—²ç½®çº¿ç¨‹ï¼Œåˆ™ä¼šå°†ä»»åŠ¡ä»£ç†åŠ å…¥ä»»åŠ¡é˜Ÿåˆ—ä¸­ã€‚
+class IThreadTaskContainer : /*ä»»åŠ¡é˜Ÿåˆ—*/public TQueue<FSimpleDelegate>, /*çº¿ç¨‹æ± */public TArray<TSharedPtr<IThreadProxy>>,/*å…¬æœ‰æ¥å£*/public IThreadContainer
 {
 protected:
 	typedef TArray<TSharedPtr<IThreadProxy>>	TProxyArray;
@@ -108,21 +110,21 @@ protected:
 
 public:
 
-	//ÈÎÎñ¶ÓÁĞÌí¼ÓÒ»¸öÈÎÎñ
+	//ä»»åŠ¡é˜Ÿåˆ—æ·»åŠ ä¸€ä¸ªä»»åŠ¡
 	void operator<<(const FSimpleDelegate& ThreadProxy)
 	{
 		MUTEX_LOCL;
 		this->Enqueue(ThreadProxy);
 	}
 
-	//´ÓÈÎÎñ¶ÓÁĞÄ©Î²É¾³ı²¢È¡³öÒ»¸öÈÎÎñ
+	//ä»ä»»åŠ¡é˜Ÿåˆ—æœ«å°¾åˆ é™¤å¹¶å–å‡ºä¸€ä¸ªä»»åŠ¡
 	bool operator<<=(FSimpleDelegate& ThreadProxy)
 	{
 		MUTEX_LOCL;
 		return this->Dequeue(ThreadProxy);
 	}
 
-	//Ìí¼ÓÒ»¸öÏß³Ìµ½Ïß³Ì³Ø
+	//æ·»åŠ ä¸€ä¸ªçº¿ç¨‹åˆ°çº¿ç¨‹æ± 
 	IThreadTaskContainer& operator<<(const TSharedPtr<IThreadProxy>& ThreadProxy)
 	{
 		MUTEX_LOCL;
@@ -130,7 +132,7 @@ public:
 		return *this;
 	}
 
-	//Ñ°ÕÒÏĞÖÃÎ´°ó¶¨µÄÏß³Ì°ó¶¨´úÀíÈÎÎñ
+	//å¯»æ‰¾é—²ç½®æœªç»‘å®šçš„çº¿ç¨‹ç»‘å®šä»£ç†ä»»åŠ¡
 	void operator>>(const FSimpleDelegate& ThreadProxy)
 	{
 		bool bSuccessful = false;
@@ -140,15 +142,15 @@ public:
 			{
 				if (Tmp->IsSuspend() && !Tmp->GetThreadDelegate().IsBound())
 				{
-					Tmp->GetThreadDelegate() = ThreadProxy; //Ìí¼Ó´úÀíÈÎÎñ
-					Tmp->WakeupThread(); //»½ĞÑTmpÏß³Ì
+					Tmp->GetThreadDelegate() = ThreadProxy; //æ·»åŠ ä»£ç†ä»»åŠ¡
+					Tmp->WakeupThread(); //å”¤é†’Tmpçº¿ç¨‹
 
 					bSuccessful = true;
 					break;
 				}
 			}
 		}
-		//Èç¹ûÏß³Ì³ØÃ»ÓĞ¿ÕÓàÏß³Ì£¬ÔòÌí¼Óµ½ÈÎÎñ¶ÓÁĞÖĞ
+		//å¦‚æœçº¿ç¨‹æ± æ²¡æœ‰ç©ºä½™çº¿ç¨‹ï¼Œåˆ™æ·»åŠ åˆ°ä»»åŠ¡é˜Ÿåˆ—ä¸­
 		if (!bSuccessful)
 		{
 			*this << ThreadProxy;
@@ -156,34 +158,34 @@ public:
 	}
 };
 
-//Í¬²½Òì²½Ïß³Ì½Ó¿Ú
+//åŒæ­¥å¼‚æ­¥çº¿ç¨‹æ¥å£
 class IAbandonableContainer : public IThreadContainer
 {
 protected:
-	//Í¬²½°ó¶¨´úÀí
+	//åŒæ­¥ç»‘å®šä»£ç†
 	void operator<<(const FSimpleDelegate& ThreadDelegate)
 	{
 		FAsyncTask<FSimpleAbandonable>* SimpleAbandonable = new FAsyncTask<FSimpleAbandonable>(ThreadDelegate);
-		SimpleAbandonable->StartBackgroundTask(); //Ö´ĞĞºóÌ¨³ÌĞò(ÁíÍâÏß³Ì)
-		SimpleAbandonable->EnsureCompletion(); //×èÈûÆô¶¯Ïß³Ì£¬µÈ´ıÍê³É
+		SimpleAbandonable->StartBackgroundTask(); //æ‰§è¡Œåå°ç¨‹åº(å¦å¤–çº¿ç¨‹)
+		SimpleAbandonable->EnsureCompletion(); //é˜»å¡å¯åŠ¨çº¿ç¨‹ï¼Œç­‰å¾…å®Œæˆ
 		delete SimpleAbandonable;
 	}
 
-	//Òì²½°ó¶¨´úÀí
+	//å¼‚æ­¥ç»‘å®šä»£ç†
 	void operator>>(const FSimpleDelegate& ThreadDelegate)
 	{
-		(new FAutoDeleteAsyncTask<FSimpleAbandonable>(ThreadDelegate))->StartBackgroundTask(); //ÈÎÎñÍê³Éºó×Ô¶¯Ê©·Å 
+		(new FAutoDeleteAsyncTask<FSimpleAbandonable>(ThreadDelegate))->StartBackgroundTask(); //ä»»åŠ¡å®Œæˆåè‡ªåŠ¨æ–½æ”¾ 
 	}
 };
 
-//Ğ­³Ì
+//åç¨‹
 class ICoroutinesContainer
 {
 public:
 	ICoroutinesContainer():TmpTotalTime(0.f){}
 	virtual ~ICoroutinesContainer() { ICoroutinesObject::Array.Empty(); }
 
-	//³õÊ¼»¯×ÜÊ±¼ä
+	//åˆå§‹åŒ–æ€»æ—¶é—´
 	ICoroutinesContainer &operator<<(float TotalTime)
 	{
 		TmpTotalTime = TotalTime;
@@ -191,7 +193,7 @@ public:
 		return *this;
 	}
 
-	//´´½¨Ìí¼ÓÏß³Ì¶ÔÏó£¬·µ»Ø*this
+	//åˆ›å»ºæ·»åŠ çº¿ç¨‹å¯¹è±¡ï¼Œè¿”å›*this
 	ICoroutinesContainer &operator<<(const FSimpleDelegate& ThreadDelegate)
 	{
 		ICoroutinesObject::Array.Add(MakeShareable(new FCoroutinesObject(TmpTotalTime, ThreadDelegate)));
@@ -199,7 +201,7 @@ public:
 		return *this;
 	}
 
-	//ÒÆ³ıÍê³ÉµÄĞ­³Ì¶ÔÏó
+	//ç§»é™¤å®Œæˆçš„åç¨‹å¯¹è±¡
 	void operator<<=(float Time)
 	{
 		TArray<TSharedPtr<ICoroutinesObject>> RemoveObject;
@@ -220,7 +222,7 @@ public:
 		}
 	}
 
-	//Ìí¼Ó´´½¨Ğ­³Ì¶ÔÏó£¬·µ»Ø×îĞÂÌí¼ÓµÄĞ­³Ì¶ÔÏó
+	//æ·»åŠ åˆ›å»ºåç¨‹å¯¹è±¡ï¼Œè¿”å›æœ€æ–°æ·»åŠ çš„åç¨‹å¯¹è±¡
 	FCoroutinesHandle operator>>(const FSimpleDelegate& ThreadDelegate)
 	{
 		ICoroutinesObject::Array.Add(MakeShareable(new FCoroutinesObject(ThreadDelegate)));
@@ -232,12 +234,12 @@ private:
 };
 
 
-//Í¼±íÏß³Ì½Ó¿Ú
+//å›¾è¡¨çº¿ç¨‹æ¥å£
 class IGraphContainer :public IThreadContainer
 {
 protected:
 
-	//ºô½ĞÖ÷Ïß³Ì
+	//å‘¼å«ä¸»çº¿ç¨‹
 	FGraphEventRef operator<<(const FSimpleDelegate& ThreadDelegate)
 	{
 		MUTEX_LOCL;
@@ -248,7 +250,7 @@ protected:
 			ENamedThreads::GameThread);
 	}
 
-	//°ó¶¨ÈÎÒâÏß³Ì
+	//ç»‘å®šä»»æ„çº¿ç¨‹
 	FGraphEventRef operator>>(const FSimpleDelegate& ThreadDelegate)
 	{
 		MUTEX_LOCL;
@@ -258,4 +260,36 @@ protected:
 			nullptr,
 			ENamedThreads::AnyThread); 
 	}
+};
+
+
+//èµ„æºç®¡ç†æ¥å£
+class IStreamableContainer
+{
+public:
+	virtual ~IStreamableContainer() {}
+
+	//å­˜å‚¨è·¯å¾„   (æœé›†èµ„æºè·¯å¾„ ç„¶åæ­é… å¼‚æ­¥èµ„æºæ˜¯ä¸€èµ·ç”¨çš„)
+	IStreamableContainer& operator>>(const TArray<FSoftObjectPath>& InObjectPath)
+	{
+		SetObjectPath(InObjectPath);
+
+		return *this;
+	}
+	//å¼‚æ­¥èµ„æº
+	TSharedPtr<struct FStreamableHandle> operator>>(const FSimpleDelegate& ThreadDelegate)
+	{
+		return GetStreamableManager()->RequestAsyncLoad(GetObjectPath(), ThreadDelegate); //å®Œæˆå¼‚æ­¥ä»¥åæ‰§è¡Œä»£ç†
+	}
+
+	//åŒæ­¥è¯»å–
+	TSharedPtr<struct FStreamableHandle> operator<<(const TArray<FSoftObjectPath>& InObjectPath)
+	{
+		return GetStreamableManager()->RequestSyncLoad(InObjectPath);
+	}
+
+protected:
+	virtual void SetObjectPath(const TArray<FSoftObjectPath>& InObjectPath) = 0; //
+	virtual TArray<FSoftObjectPath>& GetObjectPath() = 0; //è·å–èµ„æºè·¯å¾„
+	virtual FStreamableManager* GetStreamableManager() = 0;	//ç®¡ç†ç±»
 };

@@ -178,3 +178,33 @@ void FThreadGraphManage::Wait(const FGraphEventArray &EventRef)
 {
 	FTaskGraphInterface::Get().WaitUntilTasksComplete(EventRef);
 }
+
+
+/*--------------------------- FResourceLoadingManage.cpp ---------------------------*/
+/*--------------------------- FResourceLoadingManage.cpp ---------------------------*/
+FResourceLoadingManage::FResourceLoadingManage()
+	:Super()
+	, StreamableManager(new FStreamableManager())
+{
+
+}
+
+FResourceLoadingManage::~FResourceLoadingManage()
+{
+	delete StreamableManager;
+}
+
+void FResourceLoadingManage::SetObjectPath(const TArray<FSoftObjectPath>& InObjectPath)
+{
+	SoftObjectPath = InObjectPath;
+}
+
+TArray<FSoftObjectPath>& FResourceLoadingManage::GetObjectPath()
+{
+	return SoftObjectPath;
+}
+
+FStreamableManager* FResourceLoadingManage::GetStreamableManager()
+{
+	return StreamableManager;
+}
