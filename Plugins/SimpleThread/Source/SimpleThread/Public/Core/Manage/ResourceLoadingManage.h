@@ -3,7 +3,7 @@
 #include "Interface/ThreadManageInterface.h"
 #include "Core/Manage/ManageBase/ThreadManageBase.h"
 
-//Create 可以绑定异步结束后通知的事件
+//Create 可以绑定异步结束后通知的事件 //>> 
 struct SIMPLETHREAD_API FResourceLoadingManage :FThreadTemplateBase<IStreamableContainer,TSharedPtr<struct FStreamableHandle>>
 {
 	typedef FThreadTemplateBase<

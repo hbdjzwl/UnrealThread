@@ -6,7 +6,8 @@
 #include "Abandonable/SimpleAbandonable.h"
 #include "Coroutines/SimpleCoroutines.h"
 #include "Engine/StreamableManager.h"
-//#include "Runnable/ThreadRunnableProxy.h"
+#include "Runnable/ThreadRunnableProxy.h"
+
 
 class IThreadContainer
 {
@@ -47,15 +48,20 @@ public:
 				{
 					temp->GetThreadDelegate() = ThreadProxy;
 					ThreadHandle = temp->GetThreadHandle();
+					temp->WakeupThread();//唤醒
 					break;
 				}
 			}
 		}
 
-		//1.线程数量不够，则创建新的线程添加线程池中。2.添加任务代理
+		//1.线程数量不够，则创建新的线程添加线程池中。2.添加任务代理,3,假如线程池，开始线程！！!!!!!!!!
 		if (!ThreadHandle.IsValid())
 		{
-			ThreadHandle = *this << MakeShareable(new FThreadRunnable(true)) >> ThreadProxy; //创建既执行
+			TSharedPtr<IThreadProxy> Proxy =  MakeShareable(new FThreadRunnable(true)); 
+			Proxy->GetThreadDelegate() = ThreadProxy;
+			*this << Proxy;
+
+			ThreadHandle = Proxy->GetThreadHandle();
 		}
 		return ThreadHandle;
 	}
@@ -289,7 +295,7 @@ public:
 	}
 
 protected:
-	virtual void SetObjectPath(const TArray<FSoftObjectPath>& InObjectPath) = 0; //
+	virtual void SetObjectPath(const TArray<FSoftObjectPath>& InObjectPath) = 0; //设置保存资源路径
 	virtual TArray<FSoftObjectPath>& GetObjectPath() = 0; //获取资源路径
 	virtual FStreamableManager* GetStreamableManager() = 0;	//管理类
 };

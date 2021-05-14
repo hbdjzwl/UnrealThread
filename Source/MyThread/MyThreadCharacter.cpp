@@ -11,8 +11,82 @@
 #include "Kismet/GameplayStatics.h"
 #include "MotionControllerComponent.h"
 #include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
+#include "ThreadManage.h"
+
+
+FCriticalSection					Mutex;
+TArray<FThreadHandle> ThreadHandle; //用于测试Bind线程
+
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
+
+void ThreadP(const FString Mes)
+{
+	{
+		FScopeLock ScopeLock(&Mutex);
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Red, *Mes);
+		}
+	}
+
+}
+
+void AMyThreadCharacter::T1(int32 i)
+{
+	ThreadP(FString::Printf(TEXT("T1 : %i"), i));
+}
+
+void AMyThreadCharacter::T2(int32 i, FString Mes)
+{
+	ThreadP(FString::Printf(TEXT("T1 : %i, Mes = %s"), i,*Mes));
+}
+
+
+void AMyThreadCharacter::Do()
+{
+	if (TimerHandle.IsValid())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
+
+	}
+//	同步
+// 	for (auto& temp : ThreadHandle)
+// 	{
+// 		GThread::GetProxy().Join(temp);
+// 	}
+
+//	异步
+	for (auto& temp : ThreadHandle)
+	{
+		GThread::GetProxy().Detach(temp);
+	}
+
+}
+
+struct FMyStruct
+{
+	void Hello(FString Mes)
+	{
+		ThreadP(FString::Printf(TEXT("FMyStruct::Hello : %s"), *Mes));
+	}
+};
+
+struct FMyStructSP :public TSharedFromThis<FMyStructSP>
+{
+	void HelloSP(FString Mes)
+	{
+		ThreadP(FString::Printf(TEXT("FMyStructSP::Hello : %s"), *Mes));
+	}
+};
+
+
+
+
+
+
+
+
 
 //////////////////////////////////////////////////////////////////////////
 // AMyThreadCharacter
@@ -84,6 +158,7 @@ AMyThreadCharacter::AMyThreadCharacter()
 	//bUsingMotionControllers = true;
 }
 
+
 void AMyThreadCharacter::BeginPlay()
 {
 	// Call the base class  
@@ -103,7 +178,52 @@ void AMyThreadCharacter::BeginPlay()
 		VR_Gun->SetHiddenInGame(true, true);
 		Mesh1P->SetHiddenInGame(false, true);
 	}
+
+	//测试我们的线程
+	{
+		ThreadHandle.SetNum(5);
+		FMyStruct MyStruct;
+		TSharedPtr<FMyStructSP> MyStructSP = MakeShareable(new FMyStructSP);
+
+		ThreadHandle[0] = GThread::GetProxy().BindUObject(this, &AMyThreadCharacter::T1, 777);
+		ThreadHandle[1] = GThread::GetProxy().BindRaw(&MyStruct, &FMyStruct::Hello, FString("Hello~"));
+		ThreadHandle[2] = GThread::GetProxy().BindSP(MyStructSP.ToSharedRef(), &FMyStructSP::HelloSP, FString("HelloSP~"));
+		ThreadHandle[3] = GThread::GetProxy().BindUFunction(this, TEXT("T2"), 123, FString("T22222"));
+		ThreadHandle[4] = GThread::GetProxy().BindLambda([](FString Mes)
+			{
+				ThreadP(Mes);
+			}, "Lambda");
+
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AMyThreadCharacter::Do, 3.f);
+	}
+	return;
+
+	//测试我们的Create线程
+	{
+		FMyStruct MyStruct;
+		TSharedPtr<FMyStructSP> MyStructSP = MakeShareable(new FMyStructSP);
+
+		GThread::GetProxy().CreateUObject(this, &AMyThreadCharacter::T1, 777);
+		GThread::GetProxy().CreateRaw(&MyStruct, &FMyStruct::Hello, FString("Hello~"));
+		GThread::GetProxy().CreateSP(MyStructSP.ToSharedRef(), &FMyStructSP::HelloSP, FString("HelloSP~"));
+		GThread::GetProxy().CreateUFunction(this, TEXT("T2"), 123, FString("T22222"));
+		GThread::GetProxy().CreateLambda([](FString Mes)
+			{
+				ThreadP(Mes);
+			}, "Lambda");
+
+	}
+
+
 }
+
+void AMyThreadCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	GThread::Destroy();
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // Input

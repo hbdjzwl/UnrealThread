@@ -13,6 +13,19 @@ class AMyThreadCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
+public:
+	UFUNCTION()
+	void T1(int32 i);
+	UFUNCTION()
+	void T2(int32 i,FString Mes);
+
+	UFUNCTION()
+	void Do();
+private:
+	FTimerHandle TimerHandle;
+
+
+private:
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
 	UPROPERTY(VisibleDefaultsOnly, Category=Mesh)
 	class USkeletalMeshComponent* Mesh1P;
@@ -50,7 +63,7 @@ public:
 
 protected:
 	virtual void BeginPlay();
-
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason);
 public:
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)

@@ -6,7 +6,7 @@ int32 FThreadRunnable::ThreadCount = 0;
 
 FThreadRunnable::FThreadRunnable(bool SuspendAtFirst)
 	:IThreadProxy()
-	,bRun(false)
+	,StopTaskCounter(0)
 	,bSuspendAtFirst(SuspendAtFirst) //默认创建后是直接挂起线程的
 	,Thread(nullptr)
 {
@@ -41,23 +41,27 @@ bool FThreadRunnable::IsSuspend()
 
 void FThreadRunnable::WaitAndCompleted()
 {
-	bRun = false;
-	ThreadEvent.Trigger(); //激活原有线程？
-
-	StartUpEvent.Wait(); //阻塞我门的启动线程 (此行等待唤醒)
-
-	//主线程休眠0.03秒。等待当前线程Run()成功返回后。在继续执行主线程后续的删除线程任务。
-	FPlatformProcess::Sleep(0.03f); 
+	Stop();
+	if (ThreadEvent.IsWait()) //防止主线程被锁死(挂起)！
+	{
+		ThreadEvent.Trigger(); //激活原有线程？
+		StartUpEvent.Wait(); //阻塞我门的启动线程 (此行等待唤醒)
+		//主线程休眠0.03秒。等待当前线程Run()成功返回后。在继续执行主线程后续的删除线程任务。
+		FPlatformProcess::Sleep(0.03f);
+	}
 }
 
 void FThreadRunnable::BlockingAndCompletion()
 {
+
+
+	ThreadEvent.Trigger();//唤醒沉睡的线程
 	WaitExecuteEvent.Wait();
 }
 
 uint32 FThreadRunnable::Run()
 {
-	while(bRun)
+	while(StopTaskCounter.GetValue() == 0)
 	{
 		if (!bSuspendAtFirst) //第一次是否被挂起
 		{
@@ -84,22 +88,17 @@ bool FThreadRunnable::Init()
 {
 	if (!FPlatformProcess::SupportsMultithreading()) //当前平台是否支持多线程
 	{
-		bRun = false;
-	}
-	else
-	{
-		bRun = true;
+		Stop();
 	}
 
-	return bRun;
+	return StopTaskCounter.GetValue() == 0;
 }
 void FThreadRunnable::Stop()
 {
-
+	StopTaskCounter.Increment(); //递增
 }
 
 void FThreadRunnable::Exit()
 {
 	StartUpEvent.Trigger(); //唤醒主线程
-	bRun = false;
 }
