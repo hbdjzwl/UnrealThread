@@ -50,7 +50,7 @@
 #define USE_UE_THREAD_POOL_ASYNCTASK(ThreadDelegate) \
 (new FAutoDeleteAsyncTask<FSimpleAbandonable>(ThreadDelegate))->StartBackgroundTask()
 
-#define ASYNCTASK_UOBJECT(Method,Object,...) \
+#define ASYNCTASK_UOBJECT(Object,Method,...) \
 USE_UE_THREAD_POOL_ASYNCTASK(FSimpleDelegate::CreateUObject(Object,Method,__VA_ARGS__))
 
 #define ASYNCTASK_Raw(Object,Method,...) \
@@ -102,24 +102,24 @@ FTaskGraphInterface::Get().WaitUntilTaskCompletes(NewTask);}
 FSimpleDelegateGraphTask::CreateAndDispatchWhenReady([&]() {Code}, TStatId(), OtherTask, CallThread);
 
 //呼叫线程 可以设置前置任务
-#define CALL_THREAD(EventRef,InTaskDeletegate,OtherTask) \
-EventRef = FSimpleDelegateGraphTask::CreateAndDispatchWhenReady(InTaskDeletegate,TStatId(),OtherTask);
+#define CALL_THREAD(EventRef,OtherTask,CallThreadName,InTaskDeletegate) \
+EventRef = FSimpleDelegateGraphTask::CreateAndDispatchWhenReady(InTaskDeletegate,TStatId(),OtherTask,CallThreadName);
 
 //
-#define CALL_THREAD_UOBJECT(EventRef,OtherTask,Object,Method,...) \
-CALL_THREAD(EventRef,OtherTask,FSimpleDelegate::CreateUObject(Object,Method,__VA_ARGS__))
+#define CALL_THREAD_UOBJECT(EventRef,OtherTask,CallThreadName,Object,Method,...) \
+CALL_THREAD(EventRef,OtherTask,CallThreadName,FSimpleDelegate::CreateUObject(Object,Method,__VA_ARGS__))
 
-#define CALL_THREAD_Raw(EventRef,OtherTask,Object,Method,...) \
-CALL_THREAD(EventRef,OtherTask,FSimpleDelegate::CreateRaw(Object,Method,__VA_ARGS__))
+#define CALL_THREAD_Raw(EventRef,OtherTask,CallThreadName,Object,Method,...) \
+CALL_THREAD(EventRef,OtherTask,CallThreadName,FSimpleDelegate::CreateRaw(Object,Method,__VA_ARGS__))
 
-#define CALL_THREAD_SP(EventRef,OtherTask,Object,Method,...) \
-CALL_THREAD(EventRef,OtherTask,FSimpleDelegate::CreateSP(Object,Method,__VA_ARGS__))
+#define CALL_THREAD_SP(EventRef,OtherTask,CallThreadName,Object,Method,...) \
+CALL_THREAD(EventRef,OtherTask,CallThreadName,FSimpleDelegate::CreateSP(Object,Method,__VA_ARGS__))
 
-#define CALL_THREAD_Lambda(EventRef,OtherTask,Method,...) \
-CALL_THREAD(EventRef,OtherTask,FSimpleDelegate::CreateLambda(Method,__VA_ARGS__))
+#define CALL_THREAD_Lambda(EventRef,OtherTask,CallThreadName,Method,...) \
+CALL_THREAD(EventRef,OtherTask,CallThreadName,FSimpleDelegate::CreateLambda(Method,__VA_ARGS__))
 
-#define CALL_THREAD_UFunction(EventRef,OtherTask,Object,Method,...) \
-CALL_THREAD(EventRef,OtherTask,FSimpleDelegate::CreateUFunction(Object,Method,__VA_ARGS__))
+#define CALL_THREAD_UFunction(EventRef,OtherTask,CallThreadName,Object,Method,...) \
+CALL_THREAD(EventRef,OtherTask,CallThreadName,FSimpleDelegate::CreateUFunction(Object,Method,__VA_ARGS__))
 
 
 //等待1个事件

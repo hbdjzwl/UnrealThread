@@ -21,6 +21,15 @@ public:
 
 	UFUNCTION()
 	void Do();
+	
+	UFUNCTION()
+	void Run();
+	UFUNCTION()
+	void OK();
+
+	UPROPERTY(EditDefaultsOnly,meta = (AllowPrivateAccess = "true"))
+	TArray<FSoftObjectPath> ObjectPath;
+
 private:
 	FTimerHandle TimerHandle;
 

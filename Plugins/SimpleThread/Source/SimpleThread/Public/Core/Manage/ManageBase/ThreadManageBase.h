@@ -44,11 +44,11 @@ public:
 
 //提供基础模板类，便于匹配
 template<class FTask, typename ReturnType = void>
-class FTreadTemplate :public FThreadTemplateBase<FTask, ReturnType>
+class FThreadTemplate :public FThreadTemplateBase<FTask, ReturnType>
 {
 	//Bind 
 public:
-	FTreadTemplate():FThreadTemplateBase<FTask, ReturnType>(){}
+	FThreadTemplate():FThreadTemplateBase<FTask, ReturnType>(){}
 
 	template<class UserClass, typename... VarTypes>
 	ReturnType BindRaw(UserClass *TargetClass, typename TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type InMethod, VarTypes... Vars)

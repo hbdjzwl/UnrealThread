@@ -135,6 +135,7 @@ public:
 	{
 		MUTEX_LOCL;
 		this->Add(ThreadProxy);
+		ThreadProxy->CreateSafeThread(); //...
 		return *this;
 	}
 
@@ -165,6 +166,7 @@ public:
 };
 
 //同步异步线程接口
+//同步异步线程接口
 class IAbandonableContainer : public IThreadContainer
 {
 protected:
@@ -184,6 +186,7 @@ protected:
 	}
 };
 
+//协程
 //协程
 class ICoroutinesContainer
 {
@@ -213,18 +216,18 @@ public:
 		TArray<TSharedPtr<ICoroutinesObject>> RemoveObject;
 		for (int32 i = 0; i < ICoroutinesObject::Array.Num(); i++)
 		{
-			FCoroutinesRequest Request(Time);
+			FCoroutinesRequest Request(Time); //请求对象，就是存储个Bool返回值和时间。有点多余。
 
-			ICoroutinesObject::Array[i]->Update(Request);
+			ICoroutinesObject::Array[i]->Update(Request);//每个协程对象计时增加，且条件执行。返回请求对象
 			if (Request.bCompleteRequest)
 			{
-				RemoveObject.Add(ICoroutinesObject::Array[i]);
+				RemoveObject.Add(ICoroutinesObject::Array[i]); 
 			}
 		}
 
 		for (auto &RemoveInstance : RemoveObject)
 		{
-			ICoroutinesObject::Array.Remove(RemoveInstance);
+			ICoroutinesObject::Array.Remove(RemoveInstance); //从协程池中清理
 		}
 	}
 
@@ -239,7 +242,7 @@ private:
 	float TmpTotalTime; 
 };
 
-
+//图表线程接口
 //图表线程接口
 class IGraphContainer :public IThreadContainer
 {
@@ -268,7 +271,7 @@ protected:
 	}
 };
 
-
+//资源管理接口
 //资源管理接口
 class IStreamableContainer
 {

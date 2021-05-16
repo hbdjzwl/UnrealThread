@@ -7,7 +7,7 @@
 //Bind		创建线程并且绑定任务但不执行，通过Join与Detach来决定异步执行还是同步执行
 //Create	创建线程并且直接执行任务，是最快捷的异步方式
 
-class SIMPLETHREAD_API FThreadProxyManage : public FTreadTemplate<IThreadProxyContainer,FThreadHandle>
+class SIMPLETHREAD_API FThreadProxyManage : public FThreadTemplate<IThreadProxyContainer,FThreadHandle>
 {
 public:
 	~FThreadProxyManage();

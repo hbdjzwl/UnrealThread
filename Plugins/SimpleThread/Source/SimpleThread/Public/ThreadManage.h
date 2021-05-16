@@ -34,6 +34,7 @@ namespace TM
 		static FThreadTaskManagement& GetTask() { return Get()->ThreadTaskManagement; }
 		static FThreadAbandonableManage& GetAbandonable() { return Get()->ThreadAbandonableManage; }
 		static FCoroutinesManage& GetCoroutines() { return Get()->CoroutinesManage; }
+		static FThreadGraphManage& GetGraph() { return Get()->ThreadGrapManage; }
 		static FResourceLoadingManage& GetResourceLoading() { return Get()->ResourceLoadingManage; }
 	protected:
 		FThreadProxyManage ThreadProxtManage;				//自定义线程创建，可简单直接的创建线程

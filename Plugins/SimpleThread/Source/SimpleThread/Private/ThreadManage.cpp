@@ -56,6 +56,7 @@ void FThreadTaskManagement::Init(int32 ThreadNum)
 	{
 		*this << MakeShareable(new FThreadRunnable);
 	}
+	FPlatformProcess::Sleep(0.1f);
 }
 
 void FThreadTaskManagement::Tick(float DeltaTime)

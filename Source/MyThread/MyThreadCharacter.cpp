@@ -12,13 +12,16 @@
 #include "MotionControllerComponent.h"
 #include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
 #include "ThreadManage.h"
-
-
-FCriticalSection					Mutex;
-TArray<FThreadHandle> ThreadHandle; //用于测试Bind线程
+#include "Windows/WindowsPlatformThread.h"
 
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
+
+// struct FMyStruct;
+// struct FMyStructSP;
+FCriticalSection	Mutex;
+TArray<FCoroutinesHandle> CoroutinesHandle;
+TArray<FGraphEventRef> ArrayEventRef;
 
 void ThreadP(const FString Mes)
 {
@@ -29,7 +32,7 @@ void ThreadP(const FString Mes)
 			GEngine->AddOnScreenDebugMessage(-1, 100.f, FColor::Red, *Mes);
 		}
 	}
-
+	FPlatformProcess::Sleep(1.f);//测试Windows线程时使用
 }
 
 void AMyThreadCharacter::T1(int32 i)
@@ -39,7 +42,7 @@ void AMyThreadCharacter::T1(int32 i)
 
 void AMyThreadCharacter::T2(int32 i, FString Mes)
 {
-	ThreadP(FString::Printf(TEXT("T1 : %i, Mes = %s"), i,*Mes));
+	ThreadP(FString::Printf(TEXT("T1 : %i, Mes = %s"), i, *Mes));
 }
 
 
@@ -50,16 +53,25 @@ void AMyThreadCharacter::Do()
 		GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
 
 	}
-//	同步
-// 	for (auto& temp : ThreadHandle)
-// 	{
-// 		GThread::GetProxy().Join(temp);
-// 	}
+	//	同步
+	// 	for (auto& temp : ThreadHandle)
+	// 	{
+	// 		GThread::GetProxy().Join(temp);
+	// 	}
 
-//	异步
-	for (auto& temp : ThreadHandle)
+	//	异步
+	// 	for (auto& temp : ThreadHandle)
+	// 	{
+	// 		GThread::GetProxy().Detach(temp);
+	// 	}
+
+	//	唤醒Create协程
+	for (auto& temp : CoroutinesHandle)
 	{
-		GThread::GetProxy().Detach(temp);
+		if (temp.IsValid())
+		{
+			temp.Pin()->Awaken();
+		}
 	}
 
 }
@@ -81,9 +93,70 @@ struct FMyStructSP :public TSharedFromThis<FMyStructSP>
 };
 
 
+TArray<FThreadHandle>	ThreadHandle; //用于测试Bind线程
+FMyStruct	MyStruct1;
+TSharedPtr<FMyStructSP> MyStructSP1 = MakeShareable(new FMyStructSP);
 
 
+void AMyThreadCharacter::Run()
+{
 
+	if (0)
+	{
+		GThread::GetGraph().CreateUObject(this, &AMyThreadCharacter::T1, 777);
+		GThread::GetGraph().CreateRaw(&MyStruct1, &FMyStruct::Hello, FString("Hello~"));
+		GThread::GetGraph().CreateSP(MyStructSP1.ToSharedRef(), &FMyStructSP::HelloSP, FString("HelloSP~"));
+		GThread::GetGraph().CreateUFunction(this, TEXT("T2"), 123, FString("T22222"));
+		GThread::GetGraph().CreateLambda([](FString Mes)
+			{
+				ThreadP(Mes);
+			}, "Lambda");
+	}
+
+
+	if (0)
+	{
+		ArrayEventRef.SetNum(5);
+		ArrayEventRef[0] = GThread::GetGraph().BindUObject(this, &AMyThreadCharacter::T1, 777);
+// 		ArrayEventRef[1] = GThread::GetGraph().BindRaw(&MyStruct1, &FMyStruct::Hello, FString("Hello~"));
+// 		ArrayEventRef[2] = GThread::GetGraph().BindSP(MyStructSP1.ToSharedRef(), &FMyStructSP::HelloSP, FString("HelloSP~"));
+// 		ArrayEventRef[3] = GThread::GetGraph().BindUFunction(this, TEXT("T2"), 123, FString("T22222"));
+// 		ArrayEventRef[4] = GThread::GetGraph().BindLambda([](FString Mes)
+// 			{
+// 				ThreadP(Mes);
+// 			}, "Lambda");
+
+		//GThread::GetGraph().Wait(ArrayEventRef[0]);
+
+		FGraphEventArray ArrayEvent;
+		for (auto &Tmp : ArrayEventRef)
+		{
+			ArrayEvent.Add(Tmp);
+		}
+
+		GThread::GetGraph().Wait(ArrayEvent); //阻塞主线程等待所有的完成后才执行。
+		ThreadP("Wait-oK");
+	}
+	return;
+
+	if(0)
+	{
+		ArrayEventRef.SetNum(5);
+		CALL_THREAD_UOBJECT(ArrayEventRef[0], NULL, ENamedThreads::AnyThread, this, &AMyThreadCharacter::T1, 777);
+		CALL_THREAD_Raw(ArrayEventRef[1], ArrayEventRef[0], ENamedThreads::AnyThread, &MyStruct1, &FMyStruct::Hello, FString("Hello~"));//等待[0]线程执行完毕后执行	
+// 		CALL_THREAD_SP(ArrayEventRef[2], NULL, ENamedThreads::AnyThread, MyStructSP1.ToSharedRef(), &FMyStructSP::HelloSP, FString("HelloSP~"));
+// 		CALL_THREAD_UFunction(ArrayEventRef[3], NULL, ENamedThreads::AnyThread, this, TEXT("T2"), 123, FString("T22222"));
+// 		CALL_THREAD_Lambda(ArrayEventRef[4], NULL, ENamedThreads::AnyThread, [](FString Mes)
+// 			{
+// 				ThreadP(Mes);
+// 			}, "Lambda");
+	}
+}
+
+void AMyThreadCharacter::OK()
+{
+
+}
 
 
 
@@ -159,6 +232,9 @@ AMyThreadCharacter::AMyThreadCharacter()
 }
 
 
+
+TSharedPtr<FStreamableHandle> StreamableHandle;
+
 void AMyThreadCharacter::BeginPlay()
 {
 	// Call the base class  
@@ -179,7 +255,141 @@ void AMyThreadCharacter::BeginPlay()
 		Mesh1P->SetHiddenInGame(false, true);
 	}
 
-	//测试我们的线程
+	{
+
+		auto La = [](TSharedPtr<FStreamableHandle> *InHandle)
+		{
+			TArray<UObject *> ExampleObject;
+			(*InHandle)->GetLoadedAssets(ExampleObject);
+
+			for (UObject *Tmp : ExampleObject)
+			{
+				ThreadP(Tmp->GetName());
+			}
+		};
+
+		//异步
+		StreamableHandle = GThread::GetResourceLoading() >> ObjectPath >> FSimpleDelegate::CreateLambda(La, &StreamableHandle);
+		//StreamableHandle = GThread::GetResourceLoading().CreateLambda(La, &StreamableHandle);
+
+		//同步
+	   //////////////////////////////////////////////////////////////////////////
+// 		StreamableHandle = GThread::GetResourceLoading() << ObjectPath;
+// 		La(&StreamableHandle);
+	}
+	return;
+
+
+	{
+		GThread::GetGraph();
+		FWindowsPlatformThread::RunDelegate.BindUObject(this, &AMyThreadCharacter::Run);
+		FWindowsPlatformThread::CompletedDelegate.BindUObject(this, &AMyThreadCharacter::OK);
+		FWindowsPlatformThread::Show();
+	}
+	return;
+
+	{
+		CoroutinesHandle.SetNum(5);
+		CoroutinesHandle[0] = GThread::GetCoroutines().CreateUObject(this, &AMyThreadCharacter::T1, 777);
+		CoroutinesHandle[1] = GThread::GetCoroutines().CreateRaw(&MyStruct1, &FMyStruct::Hello, FString("Hello~"));
+		CoroutinesHandle[2] = GThread::GetCoroutines().CreateSP(MyStructSP1.ToSharedRef(), &FMyStructSP::HelloSP, FString("HelloSP~"));
+		CoroutinesHandle[3] = GThread::GetCoroutines().CreateUFunction(this, TEXT("T2"), 123, FString("T22222"));
+		CoroutinesHandle[4] = GThread::GetCoroutines().CreateLambda([](FString Mes)
+			{
+				ThreadP(Mes);
+			}, "Lambda");
+
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AMyThreadCharacter::Do, 5.f);
+	}
+	return;
+
+	{
+		GThread::GetCoroutines().BindUObject(1.f, this, &AMyThreadCharacter::T1, 777);
+		GThread::GetCoroutines().BindRaw(2.f, &MyStruct1, &FMyStruct::Hello, FString("Hello~"));
+		GThread::GetCoroutines().BindSP(2.4f, MyStructSP1.ToSharedRef(), &FMyStructSP::HelloSP, FString("HelloSP~"));
+		GThread::GetCoroutines().BindUFunction(4.f, this, TEXT("T2"), 123, FString("T22222"));
+		GThread::GetCoroutines().BindLambda(7.f, [](FString Mes)
+			{
+				ThreadP(Mes);
+			}, "Lambda");
+	}
+	return;
+
+	{
+		SYNCTASK_UOBJECT(this, &AMyThreadCharacter::T1, 777);
+		SYNCTASK_Raw(&MyStruct1, &FMyStruct::Hello, FString("Hello~"));
+		SYNCTASK_SP(MyStructSP1.ToSharedRef(), &FMyStructSP::HelloSP, FString("HelloSP~"));
+		SYNCTASK_UFunction(this, TEXT("T2"), 123, FString("T22222"));
+		SYNCTASK_Lambda([](FString Mes)
+			{
+				ThreadP(Mes);
+			}, "Lambda");
+	}
+	return;
+
+	{
+		ASYNCTASK_UOBJECT(this, &AMyThreadCharacter::T1, 777);
+		ASYNCTASK_Raw(&MyStruct1, &FMyStruct::Hello, FString("Hello~"));
+		ASYNCTASK_SP(MyStructSP1.ToSharedRef(), &FMyStructSP::HelloSP, FString("HelloSP~"));
+		ASYNCTASK_UFunction(this, TEXT("T2"), 123, FString("T22222"));
+		ASYNCTASK_Lambda([](FString Mes)
+			{
+				ThreadP(Mes);
+			}, "Lambda");
+	}
+	return;
+
+	{
+		GThread::GetAbandonable().BindUObject(this, &AMyThreadCharacter::T1, 777);
+		GThread::GetAbandonable().BindRaw(&MyStruct1, &FMyStruct::Hello, FString("Hello~"));
+		GThread::GetAbandonable().BindSP(MyStructSP1.ToSharedRef(), &FMyStructSP::HelloSP, FString("HelloSP~"));
+		GThread::GetAbandonable().BindUFunction(this, TEXT("T2"), 123, FString("T22222"));
+		GThread::GetAbandonable().BindLambda([](FString Mes)
+			{
+				ThreadP(Mes);
+			}, "Lambda");
+	}
+	return;
+
+// 	{
+// 		GThread::GetAbandonable().CreateUObject(this, &AMyThreadCharacter::T1, 777);
+// 		GThread::GetAbandonable().CreateRaw(&MyStruct1, &FMyStruct::Hello, FString("Hello~"));
+// 		GThread::GetAbandonable().CreateSP(MyStructSP1.ToSharedRef(), &FMyStructSP::HelloSP, FString("HelloSP~"));
+// 		GThread::GetAbandonable().CreateUFunction(this, TEXT("T2"), 123, FString("T22222"));
+// 		GThread::GetAbandonable().CreateLambda([](FString Mes)
+// 			{
+// 				ThreadP(Mes);
+// 			}, "Lambda");
+// 	}
+// 	retur
+
+	{
+		GThread::GetTask().CreateUObject(this, &AMyThreadCharacter::T1, 777);
+		GThread::GetTask().CreateRaw(&MyStruct1, &FMyStruct::Hello, FString("Hello~"));
+		GThread::GetTask().CreateSP(MyStructSP1.ToSharedRef(), &FMyStructSP::HelloSP, FString("HelloSP~"));
+		GThread::GetTask().CreateUFunction(this, TEXT("T2"), 123, FString("T22222"));
+		GThread::GetTask().CreateLambda([](FString Mes)
+			{
+				ThreadP(Mes);
+			}, "Lambda");
+	}
+	return;
+
+	{
+		GThread::GetTask().BindUObject(this, &AMyThreadCharacter::T1, 777);
+		GThread::GetTask().BindRaw(&MyStruct1, &FMyStruct::Hello, FString("Hello~"));
+		GThread::GetTask().BindSP(MyStructSP1.ToSharedRef(), &FMyStructSP::HelloSP, FString("HelloSP~"));
+		GThread::GetTask().BindUFunction(this, TEXT("T2"), 123, FString("T22222"));
+		GThread::GetTask().BindLambda([](FString Mes)
+			{
+				ThreadP(Mes);
+			}, "Lambda");
+	}
+	return;
+
+
+
+	//测试我们的Bind线程
 	{
 		ThreadHandle.SetNum(5);
 		FMyStruct MyStruct;
@@ -202,7 +412,7 @@ void AMyThreadCharacter::BeginPlay()
 	{
 		FMyStruct MyStruct;
 		TSharedPtr<FMyStructSP> MyStructSP = MakeShareable(new FMyStructSP);
-
+		  
 		GThread::GetProxy().CreateUObject(this, &AMyThreadCharacter::T1, 777);
 		GThread::GetProxy().CreateRaw(&MyStruct, &FMyStruct::Hello, FString("Hello~"));
 		GThread::GetProxy().CreateSP(MyStructSP.ToSharedRef(), &FMyStructSP::HelloSP, FString("HelloSP~"));

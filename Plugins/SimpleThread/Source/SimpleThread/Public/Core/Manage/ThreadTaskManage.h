@@ -6,7 +6,7 @@
 
 //Bind		添加到任务队列中，如果有空置的线程可以直接执行该任务。
 //Create	直接在线程池里找，如果有闲置线程，直接运行当前任务。
-class SIMPLETHREAD_API FThreadTaskManagement : public FTreadTemplate<IThreadTaskContainer>
+class SIMPLETHREAD_API FThreadTaskManagement : public FThreadTemplate<IThreadTaskContainer>
 {
 public:
 	FThreadTaskManagement();
