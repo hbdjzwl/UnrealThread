@@ -26,8 +26,8 @@ protected:
 	typedef TArray<TSharedPtr<IThreadProxy>> TProxyArray;
 
 public:
-	//1.传入一个封装线程，并创建封装线程里内部真正的线程添加到线程池中
-	//2.将封装线程添加到自身数组里。
+	//1.传入一个封装线程，并创建启动线程里内部真正的线程。
+	//2.将封装线程添加到自身线程池数组里。
 	IThreadProxyContainer& operator<<(const TSharedPtr<IThreadProxy>& ThreadProxy)
 	{
 		MUTEX_LOCL; //锁
@@ -36,7 +36,7 @@ public:
 		return *this;
 	}
 
-	//根据Handle返回具体线程接口类
+	//根据指定Handle获取具体线程接口类
 	TSharedPtr<IThreadProxy> operator>>(const FThreadHandle& Handle)
 	{
 		MUTEX_LOCL;
@@ -50,13 +50,13 @@ public:
 		return NULL;
 	}
 
-	//寻找一个闲置空代理线程，将一个任务代理赋予给闲置线程，没有则添加新线程
-	FThreadHandle operator>>(const FSimpleDelegate& Delegate) //Create
+	//Create 寻找一个闲置空代理线程，将一个任务代理赋予给闲置线程，没有则添加新线程(立刻执行任务)
+	FThreadHandle operator>>(const FSimpleDelegate& Delegate)
 	{
-		FThreadHandle ThreadHandle = nullptr;	//MUTEX_LOCL; 说会死锁。
+		FThreadHandle ThreadHandle = nullptr;
 
 		{
-			MUTEX_LOCL;
+			MUTEX_LOCL;//注意锁位置嵌套会死锁
 			for (auto& temp : *this)
 			{
 				//闲置线程&&空代理
@@ -82,7 +82,7 @@ public:
 		return ThreadHandle;
 	}
 
-	//与FThreadHandle operator>>相同。唯独就是new FThreadRunnable()参数不同
+	//Bind  寻找一个闲置空代理线程，将一个任务代理赋予给闲置线程，没有则添加新线程(立刻挂起线程)
 	FThreadHandle operator << (const FSimpleDelegate& Delegate) //Bind
 	{
 		FThreadHandle ThreadHandle = nullptr;	//MUTEX_LOCL; 说会死锁。
@@ -101,8 +101,8 @@ public:
 
 		if (!ThreadHandle.IsValid()) 
 		{
-			//创建
-			ThreadHandle = *this << MakeShareable(new FThreadRunnable) << Delegate;	//与FThreadHandle operator^相同。唯独就是new FThreadRunnable()参数不同
+			//1.创建一个挂起线程，2.递归调用自己
+			ThreadHandle = *this << MakeShareable(new FThreadRunnable) << Delegate;	
 		}
 		return ThreadHandle;
 	}

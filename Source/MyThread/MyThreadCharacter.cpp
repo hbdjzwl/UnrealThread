@@ -22,6 +22,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 FCriticalSection	Mutex;
 TArray<FCoroutinesHandle> CoroutinesHandle;
 TArray<FGraphEventRef> ArrayEventRef;
+TArray<FThreadHandle>	ThreadHandle; //用于测试Bind线程
 
 void ThreadP(const FString Mes)
 {
@@ -53,13 +54,13 @@ void AMyThreadCharacter::Do()
 		GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
 
 	}
-	//	同步
+	//	同步：FThreadProxyManage方法
 	// 	for (auto& temp : ThreadHandle)
 	// 	{
 	// 		GThread::GetProxy().Join(temp);
 	// 	}
 
-	//	异步
+	//	异步：FThreadProxyManage方法
 	// 	for (auto& temp : ThreadHandle)
 	// 	{
 	// 		GThread::GetProxy().Detach(temp);
@@ -93,7 +94,7 @@ struct FMyStructSP :public TSharedFromThis<FMyStructSP>
 };
 
 
-TArray<FThreadHandle>	ThreadHandle; //用于测试Bind线程
+
 FMyStruct	MyStruct1;
 TSharedPtr<FMyStructSP> MyStructSP1 = MakeShareable(new FMyStructSP);
 
