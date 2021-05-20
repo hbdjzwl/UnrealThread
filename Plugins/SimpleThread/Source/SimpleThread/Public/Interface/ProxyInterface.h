@@ -14,7 +14,7 @@ public:
 	virtual void BlockingAndCompletion() = 0;	//阻塞并完成
 
 	FORCEINLINE FSimpleDelegate& GetThreadDelegate() { return ThreadDelegate; }
-	FORCEINLINE FThreadHandle GetThreadHandle() { return SimpleThreadHandle; } //指针返回弱指针(用于比较线程伪哈希值)
+	FORCEINLINE FThreadHandle/*TWeakPtr*/ GetThreadHandle() { return SimpleThreadHandle; } //指针返回弱指针(用于比较线程伪哈希值)
 protected:
 	FSimpleDelegate ThreadDelegate; //FSimpleDelegate ue4内置的代理
 private:

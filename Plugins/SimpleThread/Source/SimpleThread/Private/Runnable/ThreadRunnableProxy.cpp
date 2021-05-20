@@ -53,10 +53,8 @@ void FThreadRunnable::WaitAndCompleted()
 
 void FThreadRunnable::BlockingAndCompletion()
 {
-
-
 	ThreadEvent.Trigger();//唤醒沉睡的线程
-	WaitExecuteEvent.Wait();
+	WaitExecuteEvent.Wait(); //沉睡线程
 }
 
 uint32 FThreadRunnable::Run()
@@ -75,8 +73,7 @@ uint32 FThreadRunnable::Run()
 			ThreadDelegate.Unbind(); //解除代理绑定
 		}
 
-		//激活挂起的启动线程
-		WaitExecuteEvent.Trigger();
+		WaitExecuteEvent.Trigger(); //激活挂起的启动线程
 
 		bSuspendAtFirst = false; //一次性变量用于判断第一次是否被挂起
 	}

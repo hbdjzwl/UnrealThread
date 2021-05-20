@@ -31,6 +31,66 @@ TStatId FThreadManagement::GetStatId() const
 	return TStatId();
 }
 
+
+/*--------------------------- ThreadProxyManage.cpp ---------------------------*/
+/*--------------------------- ThreadProxyManage.cpp ---------------------------*/
+
+FThreadProxyManage::~FThreadProxyManage()
+{
+	for (auto& temp : *this)
+	{
+		temp->WaitAndCompleted();
+	}
+
+	//下面1句不需要加，自动会清除
+	//this->Empty(); //智能指针会调用线程里析构函数
+}
+
+bool FThreadProxyManage::Join(FThreadHandle Handle) //同步
+{
+	TSharedPtr<IThreadProxy> ThreadProxy = *this >> Handle;
+
+	if (ThreadProxy.IsValid())
+	{
+		ThreadProxy->BlockingAndCompletion(); //阻塞主线程
+		return true;
+	}
+
+	return false;
+}
+
+bool FThreadProxyManage::Detach(FThreadHandle Handle) //异步
+{
+	TSharedPtr<IThreadProxy> ThreadProxy = *this >> Handle;
+
+	if (ThreadProxy.IsValid())
+	{
+		ThreadProxy->WakeupThread(); //唤醒沉睡线程
+		return true;
+	}
+
+	return false;
+}
+
+EThreadState FThreadProxyManage::Joinable(FThreadHandle Handle)
+{
+	TSharedPtr<IThreadProxy> ThreadProxy = *this >> Handle;
+	if (ThreadProxy.IsValid())
+	{
+		if (ThreadProxy->IsSuspend()) //线程是否挂起
+		{
+			return EThreadState::LEISURELY;
+		}
+		else
+		{
+			return EThreadState::WORKING;
+		}
+	}
+
+	return EThreadState::ERROR;
+}
+
+
 /*--------------------------- FThreadTaskManagement.cpp ---------------------------*/
 /*--------------------------- FThreadTaskManagement.cpp ---------------------------*/
 FThreadTaskManagement::~FThreadTaskManagement()
@@ -92,65 +152,6 @@ void FThreadTaskManagement::Tick(float DeltaTime)
 		}
 	}
 
-}
-
-
-/*--------------------------- ThreadProxyManage.cpp ---------------------------*/
-/*--------------------------- ThreadProxyManage.cpp ---------------------------*/
-
-FThreadProxyManage::~FThreadProxyManage()
-{
-	for (auto& temp : *this)
-	{
-		temp->WaitAndCompleted();
-	}
-
-	//下面1句不需要加，自动会清除
-	//this->Empty(); //智能指针会调用线程里析构函数
-}
-
-bool FThreadProxyManage::Join(FThreadHandle Handle) //同步
-{
-	TSharedPtr<IThreadProxy> ThreadProxy = *this >> Handle;
-
-	if (ThreadProxy.IsValid())
-	{
-		ThreadProxy->BlockingAndCompletion(); //阻塞主线程
-		return true;
-	}
-
-	return false;
-}
-
-bool FThreadProxyManage::Detach(FThreadHandle Handle) //异步
-{
-	TSharedPtr<IThreadProxy> ThreadProxy = *this >> Handle;
-
-	if (ThreadProxy.IsValid())
-	{
-		ThreadProxy->WakeupThread(); //唤醒沉睡线程
-		return true;
-	}
-
-	return false;
-}
-
-EThreadState FThreadProxyManage::Joinable(FThreadHandle Handle)
-{
-	TSharedPtr<IThreadProxy> ThreadProxy = *this >> Handle;
-	if (ThreadProxy.IsValid())
-	{
-		if (ThreadProxy->IsSuspend()) //线程是否挂起
-		{
-			return EThreadState::LEISURELY;
-		}
-		else
-		{
-			return EThreadState::WORKING;
-		}
-	}
-
-	return EThreadState::ERROR;
 }
 
 

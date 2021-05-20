@@ -31,64 +31,9 @@ public:
 	IThreadProxyContainer& operator<<(const TSharedPtr<IThreadProxy>& ThreadProxy)
 	{
 		MUTEX_LOCL; //锁
-		ThreadProxy->CreateSafeThread(); //创建线程
+		ThreadProxy->CreateSafeThread(); //封装线程内部创建开启线程
 		this->Add(ThreadProxy); //添加到线程池里
 		return *this;
-	}
-
-	//寻找一个闲置空代理线程，将一个绑定任务的代理设置给线程，若线程不够，才开辟新线程，并返回线程Handle
-	FThreadHandle operator>>(const FSimpleDelegate& ThreadProxy)
-	{
-		FThreadHandle ThreadHandle = nullptr;	//MUTEX_LOCL; 说会死锁。
-		{
-			MUTEX_LOCL;
-			for (auto& temp : *this)
-			{
-				if (temp->IsSuspend() && !temp->GetThreadDelegate().IsBound()) //闲置线程&&空代理
-				{
-					temp->GetThreadDelegate() = ThreadProxy;
-					ThreadHandle = temp->GetThreadHandle();
-					temp->WakeupThread();//唤醒
-					break;
-				}
-			}
-		}
-
-		//1.线程数量不够，则创建新的线程添加线程池中。2.添加任务代理,3,假如线程池，开始线程！！!!!!!!!!
-		if (!ThreadHandle.IsValid())
-		{
-			TSharedPtr<IThreadProxy> Proxy =  MakeShareable(new FThreadRunnable(true)); 
-			Proxy->GetThreadDelegate() = ThreadProxy;
-			*this << Proxy;
-
-			ThreadHandle = Proxy->GetThreadHandle();
-		}
-		return ThreadHandle;
-	}
-
-	//与FThreadHandle operator>>相同。唯独就是new FThreadRunnable()参数不同
-	FThreadHandle operator << (const FSimpleDelegate& ThreadProxy)
-	{
-		FThreadHandle ThreadHandle = nullptr;	//MUTEX_LOCL; 说会死锁。
-		{
-			MUTEX_LOCL;
-			for (auto& temp : *this)
-			{
-				if (temp->IsSuspend() && !temp->GetThreadDelegate().IsBound())
-				{
-					temp->GetThreadDelegate() = ThreadProxy;
-					ThreadHandle = temp->GetThreadHandle();
-					break;
-				}
-			}
-		}
-
-		if (!ThreadHandle.IsValid())
-		{
-			//创建
-			ThreadHandle = *this << MakeShareable(new FThreadRunnable) << ThreadProxy;	//与FThreadHandle operator^相同。唯独就是new FThreadRunnable()参数不同
-		}
-		return ThreadHandle;
 	}
 
 	//根据Handle返回具体线程接口类
@@ -104,6 +49,64 @@ public:
 		}
 		return NULL;
 	}
+
+	//寻找一个闲置空代理线程，将一个任务代理赋予给闲置线程，没有则添加新线程
+	FThreadHandle operator>>(const FSimpleDelegate& Delegate) //Create
+	{
+		FThreadHandle ThreadHandle = nullptr;	//MUTEX_LOCL; 说会死锁。
+
+		{
+			MUTEX_LOCL;
+			for (auto& temp : *this)
+			{
+				//闲置线程&&空代理
+				if (temp->IsSuspend() && !temp->GetThreadDelegate().IsBound()) 
+				{
+					temp->GetThreadDelegate() = Delegate;//赋予任务
+					ThreadHandle = temp->GetThreadHandle();
+					temp->WakeupThread();//唤醒
+					break;
+				}
+			}
+		}
+		//没有闲置线程:则创建新线程(赋予任务)，并添加入线程池。
+		if (!ThreadHandle.IsValid())
+		{
+			TSharedPtr<IThreadProxy> Proxy =  MakeShareable(new FThreadRunnable(true)); 
+			Proxy->GetThreadDelegate() = Delegate;
+			*this << Proxy;
+
+			ThreadHandle = Proxy->GetThreadHandle();
+		}
+
+		return ThreadHandle;
+	}
+
+	//与FThreadHandle operator>>相同。唯独就是new FThreadRunnable()参数不同
+	FThreadHandle operator << (const FSimpleDelegate& Delegate) //Bind
+	{
+		FThreadHandle ThreadHandle = nullptr;	//MUTEX_LOCL; 说会死锁。
+		{
+			MUTEX_LOCL;
+			for (auto& temp : *this)
+			{
+				if (temp->IsSuspend() && !temp->GetThreadDelegate().IsBound())
+				{
+					temp->GetThreadDelegate() = Delegate;
+					ThreadHandle = temp->GetThreadHandle();
+					break;
+				}
+			}
+		}
+
+		if (!ThreadHandle.IsValid()) 
+		{
+			//创建
+			ThreadHandle = *this << MakeShareable(new FThreadRunnable) << Delegate;	//与FThreadHandle operator^相同。唯独就是new FThreadRunnable()参数不同
+		}
+		return ThreadHandle;
+	}
+
 };
 							 						
 //线程的任务管理，可以自动管理任务。自动配闲置的线程池，实现高效率的利用线程池特点。(既是线程池，也是任务队列)
