@@ -12,13 +12,13 @@ class SIMPLETHREAD_API FThreadProxyManage : public FThreadTemplate<IThreadProxyC
 public:
 	~FThreadProxyManage();
 
-	//同步(目前就一个阻塞主线程)
+	//同步(唤醒线程并阻塞主线程)
 	bool Join(FThreadHandle Handle);
 
-	//异步(目前就一个唤醒线程)
+	//异步(唤醒线程)
 	bool Detach(FThreadHandle Handle);
 
-	//获取线程状态(限制，工作，错误)
+	//获取指定线程状态(限制，工作，错误)
 	EThreadState Joinable(FThreadHandle Handle);
 
 	

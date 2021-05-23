@@ -39,20 +39,19 @@ FThreadProxyManage::~FThreadProxyManage()
 {
 	for (auto& temp : *this)
 	{
-		temp->WaitAndCompleted();
+		temp->WaitAndCompleted(); //清除线程必须先唤醒让任务work完成return不然会阻塞
 	}
-
 	//下面1句不需要加，自动会清除
 	//this->Empty(); //智能指针会调用线程里析构函数
 }
 
 bool FThreadProxyManage::Join(FThreadHandle Handle) //同步
 {
-	TSharedPtr<IThreadProxy> ThreadProxy = *this >> Handle;
+	TSharedPtr<IThreadProxy> ThreadProxy = *this >> Handle; //根据句柄获取一个线程
 
 	if (ThreadProxy.IsValid())
 	{
-		ThreadProxy->BlockingAndCompletion(); //阻塞主线程
+		ThreadProxy->BlockingAndCompletion(); //阻塞主线程(与调用线程)
 		return true;
 	}
 
@@ -72,7 +71,8 @@ bool FThreadProxyManage::Detach(FThreadHandle Handle) //异步
 	return false;
 }
 
-EThreadState FThreadProxyManage::Joinable(FThreadHandle Handle)
+//获取指定线程的状态
+EThreadState FThreadProxyManage::Joinable(FThreadHandle Handle) 
 {
 	TSharedPtr<IThreadProxy> ThreadProxy = *this >> Handle;
 	if (ThreadProxy.IsValid())
@@ -114,9 +114,10 @@ void FThreadTaskManagement::Init(int32 ThreadNum)
 {
 	for (int32 i = 0; i < ThreadNum; i++)
 	{
-		*this << MakeShareable(new FThreadRunnable);
+		*this << MakeShareable(new FThreadRunnable); // << 创建一个挂起线程并添加到线程数组里
 	}
-	FPlatformProcess::Sleep(0.1f);
+
+	FPlatformProcess::Sleep(0.1f); //Sleep0.1的意义在哪
 }
 
 void FThreadTaskManagement::Tick(float DeltaTime)
@@ -134,13 +135,14 @@ void FThreadTaskManagement::Tick(float DeltaTime)
 		}
 	}
 
-	if (ThreadProxy.IsValid()) //获取到了限制线程
+	if (ThreadProxy.IsValid())
 	{
 
 		//if (!(static_cast<TQueue<FSimpleDelegate>*>(this)->IsEmpty())) //TQueus和TArray
 		//if (!((TEventQueue *)this)->IsEmpty())
 
 		if( !((TQueue<FSimpleDelegate> *)this)->IsEmpty() ) //任务队列不等于空的
+		//if(!TQueue::IsEmpty())
 		{
 			FSimpleDelegate SimpleDelegate;
 			if (*this <<= SimpleDelegate) //取任务队列中的任务

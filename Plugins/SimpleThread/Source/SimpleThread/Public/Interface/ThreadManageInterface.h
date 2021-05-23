@@ -120,17 +120,17 @@ protected:
 public:
 
 	//任务队列添加一个任务
-	void operator<<(const FSimpleDelegate& ThreadProxy)
+	void operator<<(const FSimpleDelegate& Delegate)
 	{
 		MUTEX_LOCL;
-		this->Enqueue(ThreadProxy);
+		this->Enqueue(Delegate);
 	}
 
 	//从任务队列末尾删除并取出一个任务
-	bool operator<<=(FSimpleDelegate& ThreadProxy)
+	bool operator<<=(FSimpleDelegate& Delegate)
 	{
 		MUTEX_LOCL;
-		return this->Dequeue(ThreadProxy);
+		return this->Dequeue(Delegate);
 	}
 
 	//添加一个线程到线程池
@@ -143,7 +143,7 @@ public:
 	}
 
 	//寻找闲置未绑定的线程绑定代理任务
-	void operator>>(const FSimpleDelegate& ThreadProxy)
+	void operator>>(const FSimpleDelegate& Delegate)
 	{
 		bool bSuccessful = false;
 		{
@@ -152,7 +152,7 @@ public:
 			{
 				if (Tmp->IsSuspend() && !Tmp->GetThreadDelegate().IsBound())
 				{
-					Tmp->GetThreadDelegate() = ThreadProxy; //添加代理任务
+					Tmp->GetThreadDelegate() = Delegate; //添加代理任务
 					Tmp->WakeupThread(); //唤醒Tmp线程
 
 					bSuccessful = true;
@@ -163,7 +163,7 @@ public:
 		//如果线程池没有空余线程，则添加到任务队列中
 		if (!bSuccessful)
 		{
-			*this << ThreadProxy;
+			*this << Delegate;
 		}
 	}
 };

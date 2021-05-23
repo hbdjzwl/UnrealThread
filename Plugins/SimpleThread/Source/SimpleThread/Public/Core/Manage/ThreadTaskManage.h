@@ -9,7 +9,7 @@
 class SIMPLETHREAD_API FThreadTaskManagement : public FThreadTemplate<IThreadTaskContainer>
 {
 public:
-	FThreadTaskManagement();
+	FThreadTaskManagement(); //调用Init创建最大数量线程
 	~FThreadTaskManagement();
 
 	void Init(int32 ThreadNum); //提前初始化线程(构造函数调用)

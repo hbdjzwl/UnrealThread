@@ -39,13 +39,14 @@ bool FThreadRunnable::IsSuspend()
 	return ThreadEvent.IsWait();
 }
 
-void FThreadRunnable::WaitAndCompleted()
+void FThreadRunnable::WaitAndCompleted() //同步(销毁时调用)
 {
-	Stop();
+	Stop();//work的while打断
 	if (ThreadEvent.IsWait()) //防止主线程被锁死(挂起)！
 	{
-		ThreadEvent.Trigger(); //激活原有线程？
+		ThreadEvent.Trigger(); //激活原有线程(工作Work线程必须完成后才会不阻塞)
 		StartUpEvent.Wait(); //阻塞我门的启动线程 (此行等待唤醒)
+
 		//主线程休眠0.03秒。等待当前线程Run()成功返回后。在继续执行主线程后续的删除线程任务。
 		FPlatformProcess::Sleep(0.03f);
 	}
@@ -53,7 +54,7 @@ void FThreadRunnable::WaitAndCompleted()
 
 void FThreadRunnable::BlockingAndCompletion()
 {
-	ThreadEvent.Trigger();//唤醒沉睡的线程
+	ThreadEvent.Trigger();	 //唤醒沉睡的线程
 	WaitExecuteEvent.Wait(); //沉睡线程
 }
 
@@ -61,7 +62,7 @@ uint32 FThreadRunnable::Run()
 {
 	while(StopTaskCounter.GetValue() == 0)
 	{
-		if (!bSuspendAtFirst) //第一次是否被挂起
+		if (!bSuspendAtFirst) //第一次是否被挂起，随后每次执行完上次任务，都会被将下次挂起。(并非一个真正的while)
 		{
 			ThreadEvent.Wait(); //挂起线程
 		}
@@ -75,7 +76,7 @@ uint32 FThreadRunnable::Run()
 
 		WaitExecuteEvent.Trigger(); //激活挂起的启动线程
 
-		bSuspendAtFirst = false; //一次性变量用于判断第一次是否被挂起
+		bSuspendAtFirst = false; //一次性变量，每次循环开始都会挂起。
 	}
 
 	return 0;
