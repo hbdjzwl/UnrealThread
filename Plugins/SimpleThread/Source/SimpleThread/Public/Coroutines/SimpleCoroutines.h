@@ -14,7 +14,7 @@ struct SIMPLETHREAD_API FCoroutinesRequest
 	float IntervalTime;
 };
 
-//协程接口对象
+//协程接口对象(相当于线程里的Runnable 具体工作类)
 class SIMPLETHREAD_API ICoroutinesObject :public TSharedFromThis<ICoroutinesObject>
 {
 	friend class ICoroutinesContainer;

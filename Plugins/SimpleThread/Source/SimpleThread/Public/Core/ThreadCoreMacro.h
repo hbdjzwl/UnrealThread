@@ -92,12 +92,12 @@ USE_UE_THREAD_POOL_SYNCTASK(FSimpleDelegate::CreateUFunction(Object,Method,__VA_
 
 
 
-//同步
+//同步(暂时没用到)
 #define CALL_THREAD_SYNCH(CallThread,OtherTask,Code) \
 {FGraphEventRef NewTask = FSimpleDelegateGraphTask::CreateAndDispatchWhenReady([&]() {Code}, TStatId(), OtherTask, CallThread);	\
 FTaskGraphInterface::Get().WaitUntilTaskCompletes(NewTask);}
 
-//异步
+//异步(暂时没用到)
 #define CALL_THREAD_ASYNCH(CallThread,OtherTask,Code) \
 FSimpleDelegateGraphTask::CreateAndDispatchWhenReady([&]() {Code}, TStatId(), OtherTask, CallThread);
 

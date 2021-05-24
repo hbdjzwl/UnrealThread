@@ -13,6 +13,7 @@ public:
 	//用于监视任务情况
 	void Tick(float );
 public:
+	//初始化协程容器时间，并new协程对象到协程数组里
 	template<class UserClass, typename... VarTypes>
 	void BindRaw(float InTotalTime, UserClass *TargetClass, typename TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type InMethod, VarTypes... Vars)
 	{

@@ -269,7 +269,7 @@ void AMyThreadCharacter::BeginPlay()
 			}
 		};
 
-		//异步
+		//异步 1.存储路径 2.异步加载完路径的资源后进行代理。
 		StreamableHandle = GThread::GetResourceLoading() >> ObjectPath >> FSimpleDelegate::CreateLambda(La, &StreamableHandle);
 		//StreamableHandle = GThread::GetResourceLoading().CreateLambda(La, &StreamableHandle);
 
@@ -281,7 +281,7 @@ void AMyThreadCharacter::BeginPlay()
 	return;
 
 
-	{
+	{//原生C++
 		GThread::GetGraph();
 		FWindowsPlatformThread::RunDelegate.BindUObject(this, &AMyThreadCharacter::Run);
 		FWindowsPlatformThread::CompletedDelegate.BindUObject(this, &AMyThreadCharacter::OK);

@@ -205,7 +205,7 @@ public:
 		return *this;
 	}
 
-	//创建添加线程对象，返回*this
+	//创建协程对象，并添加到协程对象数组里，返回协程容器*this
 	ICoroutinesContainer &operator<<(const FSimpleDelegate& ThreadDelegate)
 	{
 		ICoroutinesObject::Array.Add(MakeShareable(new FCoroutinesObject(TmpTotalTime, ThreadDelegate)));
@@ -213,13 +213,21 @@ public:
 		return *this;
 	}
 
-	//移除完成的协程对象
+	//创建协程对象，并添加到协程对象数组里，返回最新添加的协程对象
+	FCoroutinesHandle operator>>(const FSimpleDelegate& ThreadDelegate)
+	{
+		ICoroutinesObject::Array.Add(MakeShareable(new FCoroutinesObject(ThreadDelegate)));
+
+		return ICoroutinesObject::Array[ICoroutinesObject::Array.Num() - 1];
+	}
+
+	//Tick调用: 更新协程对象，并移除完成的协程对象
 	void operator<<=(float Time)
 	{
 		TArray<TSharedPtr<ICoroutinesObject>> RemoveObject;
 		for (int32 i = 0; i < ICoroutinesObject::Array.Num(); i++)
 		{
-			FCoroutinesRequest Request(Time); //请求对象，就是存储个Bool返回值和时间。有点多余。
+			FCoroutinesRequest Request(Time); //创建一个请求对象，就是存储个Bool返回值和时间。有点多余。
 
 			ICoroutinesObject::Array[i]->Update(Request);//每个协程对象计时增加，且条件执行。返回请求对象
 			if (Request.bCompleteRequest)
@@ -234,13 +242,6 @@ public:
 		}
 	}
 
-	//添加创建协程对象，返回最新添加的协程对象
-	FCoroutinesHandle operator>>(const FSimpleDelegate& ThreadDelegate)
-	{
-		ICoroutinesObject::Array.Add(MakeShareable(new FCoroutinesObject(ThreadDelegate)));
-
-		return ICoroutinesObject::Array[ICoroutinesObject::Array.Num() - 1];
-	}
 private:
 	float TmpTotalTime; 
 };

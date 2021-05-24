@@ -6,9 +6,7 @@
 //Create 可以绑定异步结束后通知的事件 //>> 
 struct SIMPLETHREAD_API FResourceLoadingManage :FThreadTemplateBase<IStreamableContainer,TSharedPtr<struct FStreamableHandle>>
 {
-	typedef FThreadTemplateBase<
-		IStreamableContainer,
-		TSharedPtr<struct FStreamableHandle>> Super;
+	typedef FThreadTemplateBase<IStreamableContainer,TSharedPtr<struct FStreamableHandle>> Super;
 
 	FResourceLoadingManage();
 	~FResourceLoadingManage();
@@ -16,13 +14,13 @@ struct SIMPLETHREAD_API FResourceLoadingManage :FThreadTemplateBase<IStreamableC
 protected:
 
 	//设置资源路径
-	virtual void SetObjectPath(const TArray<FSoftObjectPath> &InObjectPath) final;
+	virtual void SetObjectPath(const TArray<FSoftObjectPath> &InObjectPath) override final;
 
 	//获取资源路径
-	virtual TArray<FSoftObjectPath> &GetObjectPath() final;
+	virtual TArray<FSoftObjectPath> &GetObjectPath() override final;
 
 	//获取流管理
-	virtual FStreamableManager *GetStreamableManager()final;
+	virtual FStreamableManager *GetStreamableManager()override final;
 
 private:
 	TArray<FSoftObjectPath> SoftObjectPath; //资源路径
