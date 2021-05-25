@@ -265,12 +265,14 @@ void AMyThreadCharacter::BeginPlay()
 
 			for (UObject *Tmp : ExampleObject)
 			{
-				ThreadP(Tmp->GetName());
+				ThreadP(Tmp->GetName()); //由于其它线程调用打印会阻塞
 			}
 		};
 
 		//异步 1.存储路径 2.异步加载完路径的资源后进行代理。
+		//【注意】: 此处传入的是智能指针的地址，此时的智能指针指向是空的，等异步执行完后返回完句柄给StreamableHandle后，才进行执行这个Lambda
 		StreamableHandle = GThread::GetResourceLoading() >> ObjectPath >> FSimpleDelegate::CreateLambda(La, &StreamableHandle);
+
 		//StreamableHandle = GThread::GetResourceLoading().CreateLambda(La, &StreamableHandle);
 
 		//同步

@@ -2,7 +2,7 @@
 
 #if PLATFORM_WINDOWS
 
-//THIRD_PARTY_INCLUDES_STARTÓëTHIRD_PARTY_INCLUDES_ENDÊÇUE4·â×°µÄÒ»¸ö°üº¬µÚÈı·½Í·ÎÄ¼şµÄºê
+//THIRD_PARTY_INCLUDES_STARTä¸THIRD_PARTY_INCLUDES_ENDæ˜¯UE4å°è£…çš„ä¸€ä¸ªåŒ…å«ç¬¬ä¸‰æ–¹å¤´æ–‡ä»¶çš„å®
 THIRD_PARTY_INCLUDES_START
 #pragma warning(push)
 #pragma warning(disable:4005)
@@ -12,7 +12,7 @@ THIRD_PARTY_INCLUDES_START
 #pragma warning(pop)
 THIRD_PARTY_INCLUDES_END
 
-//ÓÃ¿Õ×Ö·û´®("")Ê¹ÓÃoptimize±àÒëÖ¸Ê¾ÊÇ¸ÃÖ¸ÁîµÄÒ»ÖÖÌØÊâĞÎÊ½,Ëü¿É¹Ø±ÕËùÓĞµÄÓÅ»¯»ò»Ö¸´ËüÃÇµÄÔ­ÓĞ(È±Ê¡µÄ)ÉèÖÃ¡£
+//ç”¨ç©ºå­—ç¬¦ä¸²("")ä½¿ç”¨optimizeç¼–è¯‘æŒ‡ç¤ºæ˜¯è¯¥æŒ‡ä»¤çš„ä¸€ç§ç‰¹æ®Šå½¢å¼,å®ƒå¯å…³é—­æ‰€æœ‰çš„ä¼˜åŒ–æˆ–æ¢å¤å®ƒä»¬çš„åŸæœ‰(ç¼ºçœçš„)è®¾ç½®ã€‚
 #pragma optimize("",off)  
 #pragma comment( lib, "windowscodecs.lib" )		
 
@@ -20,7 +20,7 @@ static HANDLE WindowsRowThread = NULL;
 FSimpleDelegate FWindowsPlatformThread::CompletedDelegate;
 FSimpleDelegate FWindowsPlatformThread::RunDelegate;
 
-//Ïß³Ìº¯Êı
+//çº¿ç¨‹å‡½æ•°
 uint32 WINAPI StartThread(LPVOID unused)
 {
 	FWindowsPlatformThread::RunDelegate.ExecuteIfBound();

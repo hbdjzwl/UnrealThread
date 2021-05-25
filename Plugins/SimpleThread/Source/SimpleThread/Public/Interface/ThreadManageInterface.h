@@ -303,6 +303,6 @@ public:
 
 protected:
 	virtual void SetObjectPath(const TArray<FSoftObjectPath>& InObjectPath) = 0; //设置保存资源路径
-	virtual TArray<FSoftObjectPath>& GetObjectPath() = 0; //获取资源路径
+	virtual TArray<FSoftObjectPath>& GetObjectPath() = 0; //获取资源路径 
 	virtual FStreamableManager* GetStreamableManager() = 0;	//管理类
 };
